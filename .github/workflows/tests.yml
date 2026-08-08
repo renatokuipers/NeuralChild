@@ -1,0 +1,46 @@
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - uses: astral-sh/setup-uv@v5
+
+      - name: Install
+        run: |
+          uv pip install --system torch --index-url https://download.pytorch.org/whl/cpu
+          uv pip install --system -e ".[dev]"
+
+      - name: Collection succeeds
+        run: pytest --collect-only -q
+
+      - name: Failures match tests/known_failures.txt
+        run: |
+          pytest -q --tb=no -rf > pytest.out 2>&1 || true
+          tail -1 pytest.out
+          grep '^FAILED ' pytest.out | sed 's/^FAILED //; s/ .*//; s/\[.*//' | sort -u > actual.txt
+          grep -v '^#' tests/known_failures.txt | grep -v '^[[:space:]]*$' | sort -u > expected.txt
+          if diff expected.txt actual.txt > delta.txt; then
+            echo "$(wc -l < expected.txt) known failures, no regressions."
+            exit 0
+          fi
+          echo "::error::Actual failures do not match tests/known_failures.txt"
+          echo "Lines marked '<' now pass — delete them from tests/known_failures.txt."
+          echo "Lines marked '>' are new failures — fix them."
+          cat delta.txt
+          exit 1
+
+      - name: Report
+        if: always()
+        run: tail -20 pytest.out || true
