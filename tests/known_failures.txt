@@ -1,0 +1,22 @@
+# Tests that fail by design, each against a defect an open ticket already owns.
+# One test function per line; parametrised cases are covered by their function id.
+#
+#   belief identity, serialization          -> #3, #4
+#   GrowthMetrics under Pydantic v2         -> #5
+#   base network learning path              -> #6
+#   clone_with_growth                       -> #9
+#   checkpoint round trip                   -> #12
+#
+# CI compares this list against the run's actual failures and gates on an exact
+# match in both directions: an unlisted failure is a regression, and a listed
+# test that starts passing means a fix landed and its line belongs deleted here.
+tests/test_mind.py::test_belief_network_assigns_an_identity_on_add
+tests/test_mind.py::test_belief_network_round_trips_through_dict
+tests/test_mind.py::test_save_state_writes_a_checkpoint_that_loads_back
+tests/test_networks.py::test_a_highly_active_layer_triggers_growth
+tests/test_networks.py::test_an_idle_layer_triggers_pruning
+tests/test_networks.py::test_clone_with_growth_records_the_event
+tests/test_networks.py::test_clone_with_growth_returns_a_larger_network
+tests/test_networks.py::test_growth_metrics_accepts_explicit_values
+tests/test_networks.py::test_unregistered_network_has_nonzero_developmental_weight
+tests/test_networks.py::test_unregistered_network_updates_parameters_when_learning
