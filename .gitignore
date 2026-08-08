@@ -169,3 +169,14 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+# Ruff
+.ruff_cache/
+
+# Editor / IDE
+.vscode/
+
+# Local runtime configuration — names locally served LM Studio models,
+# so it is machine-specific. Config.from_yaml falls back to config.py defaults
+# when this file is absent.
+config.yaml
