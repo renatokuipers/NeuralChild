@@ -29,11 +29,12 @@ def test_growth_metrics_accepts_explicit_values(field):
     assert getattr(metrics, field) == 0.8
 
 
+@pytest.mark.parametrize("invalid", (-0.1, 1.5))
 @pytest.mark.parametrize("field", METRIC_FIELDS)
-def test_growth_metrics_rejects_out_of_range_values(field):
-    """A metric outside [0, 1] is refused with a validation error naming the field."""
+def test_growth_metrics_rejects_out_of_range_values(field, invalid):
+    """Either bound of [0, 1] is enforced, with a validation error naming the field."""
     with pytest.raises(ValidationError) as excinfo:
-        GrowthMetrics(**{field: 1.5})
+        GrowthMetrics(**{field: invalid})
     assert field in str(excinfo.value)
 
 
@@ -78,10 +79,14 @@ def test_unregistered_network_updates_parameters_when_learning(network):
     assert any(not torch.equal(b, a) for b, a in zip(before, after))
 
 
-def test_experiential_learning_tracks_the_experience(network):
-    """Every call to experiential_learning counts as one experience regardless of learning rate."""
-    network.experiential_learning(torch.randn(1, network.input_dim))
-    assert network.experience_count == 1
+def test_experience_count_tracks_calls_even_when_nothing_can_be_learned(network):
+    """Every call counts as an experience, including with effective_lr pinned to zero."""
+    network.state.developmental_weights[network.developmental_stage] = 0.0
+    before = [parameter.detach().clone() for parameter in network.parameters()]
+    for _ in range(3):
+        network.experiential_learning(torch.randn(1, network.input_dim))
+    assert network.experience_count == 3
+    assert all(torch.equal(b, a) for b, a in zip(before, network.parameters()))
 
 
 def test_clone_with_growth_returns_a_larger_network(network):
