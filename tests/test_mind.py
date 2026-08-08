@@ -64,8 +64,8 @@ def test_belief_network_indexes_evidence_and_relations_under_the_same_identity()
     assert network.belief_relationships[belief_id] == {}
 
 
-def test_belief_network_from_dict_restores_the_identity_it_keyed_by():
-    """A reloaded belief takes its id from the key it was stored under, not from its payload."""
+def test_belief_network_from_dict_restores_the_identity_it_keyed_by(caplog):
+    """A reloaded belief takes its id from the key it was stored under, and the clash is reported."""
     restored = BeliefNetwork.from_dict(
         {
             "beliefs": {
@@ -80,6 +80,7 @@ def test_belief_network_from_dict_restores_the_identity_it_keyed_by():
         }
     )
     assert restored.beliefs["belief-1"].id == "belief-1"
+    assert "stale-identity" in caplog.text
 
 
 def test_a_belief_message_forms_a_belief_the_mind_keeps(mind):

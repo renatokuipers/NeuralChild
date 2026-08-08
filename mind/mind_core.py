@@ -490,7 +490,9 @@ class BeliefNetwork(BaseModel):
             creation_time = datetime.fromisoformat(belief_data.pop("creation_time", datetime.now().isoformat()))
             last_update_time = datetime.fromisoformat(belief_data.pop("last_update_time", datetime.now().isoformat()))
 
-            belief_data.pop("id", None)
+            stored_id = belief_data.pop("id", None)
+            if stored_id is not None and stored_id != belief_id:
+                logger.warning(f"Belief keyed {belief_id} stores id {stored_id}; keeping {belief_id}")
 
             # Create belief
             belief = Belief(
