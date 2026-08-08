@@ -70,7 +70,8 @@ def test_mother_stays_silent_inside_the_rate_gate(mind):
 def test_mother_responds_when_a_need_is_urgent(mind, mother, unreachable_llm):
     """An expressed need above 0.7 draws a usable response while chat_completion raises."""
     assert any(
-        intensity > 0.7 for intensity in mind.get_observable_state().expressed_needs.values()
+        intensity > 0.7
+        for intensity in mind.get_observable_state().expressed_needs.values()
     )
     response = mother.observe_and_respond(mind)
     assert isinstance(response, MotherResponse)
@@ -88,6 +89,8 @@ def test_responding_records_the_interaction(mind, mother):
 
 @pytest.mark.parametrize("stage", list(DevelopmentalStage))
 @pytest.mark.parametrize("response_type", RESPONSE_TYPES)
-def test_template_bank_covers_every_stage_and_response_type(mother, stage, response_type):
+def test_template_bank_covers_every_stage_and_response_type(
+    mother, stage, response_type
+):
     """Each stage defines a template for each response type, which is why the LLM is optional."""
     assert mother._get_template_response(stage, response_type)

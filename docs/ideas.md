@@ -393,10 +393,11 @@ The Mother needs specialized tools to interact with NeuralChild and the BabyGym 
 ```python
 # CONCEPTUAL - Mother's sensory and action tools
 
+
 @tool(
-    "observe_jayden", 
+    "observe_jayden",
     "Observe NeuralChild's current state including emotional indicators, attention focus, and physical activity",
-    {"observation_type": str}  # "emotional", "attention", "physical", "full"
+    {"observation_type": str},  # "emotional", "attention", "physical", "full"
 )
 async def observe_jayden(args: dict) -> dict:
     """
@@ -405,21 +406,30 @@ async def observe_jayden(args: dict) -> dict:
     """
     # Integration with BabyGym sensory systems
     return {
-        "content": [{
-            "type": "text",
-            "text": json.dumps({
-                "emotional_state": {"valence": 0.7, "arousal": 0.4, "dominant_emotion": "curiosity"},
-                "attention_focus": "red_ball",
-                "physical_state": "crawling_toward_object",
-                "distress_level": 0.1
-            })
-        }]
+        "content": [
+            {
+                "type": "text",
+                "text": json.dumps(
+                    {
+                        "emotional_state": {
+                            "valence": 0.7,
+                            "arousal": 0.4,
+                            "dominant_emotion": "curiosity",
+                        },
+                        "attention_focus": "red_ball",
+                        "physical_state": "crawling_toward_object",
+                        "distress_level": 0.1,
+                    }
+                ),
+            }
+        ]
     }
+
 
 @tool(
     "express_to_jayden",
     "Express something to NeuralChild through voice, facial expression, or gesture",
-    {"modality": str, "content": str, "emotional_tone": str}
+    {"modality": str, "content": str, "emotional_tone": str},
 )
 async def express_to_jayden(args: dict) -> dict:
     """
@@ -429,16 +439,19 @@ async def express_to_jayden(args: dict) -> dict:
     """
     # Sends expression to BabyGym rendering system
     return {
-        "content": [{
-            "type": "text", 
-            "text": f"Expressed {args['emotional_tone']} {args['modality']}: {args['content']}"
-        }]
+        "content": [
+            {
+                "type": "text",
+                "text": f"Expressed {args['emotional_tone']} {args['modality']}: {args['content']}",
+            }
+        ]
     }
+
 
 @tool(
     "modify_environment",
     "Make changes to the BabyGym environment to create learning opportunities",
-    {"action": str, "target": str, "parameters": dict}
+    {"action": str, "target": str, "parameters": dict},
 )
 async def modify_environment(args: dict) -> dict:
     """
@@ -446,16 +459,19 @@ async def modify_environment(args: dict) -> dict:
     Actions: "introduce_object", "remove_object", "create_obstacle", "adjust_lighting"
     """
     return {
-        "content": [{
-            "type": "text",
-            "text": f"Environment modified: {args['action']} on {args['target']}"
-        }]
+        "content": [
+            {
+                "type": "text",
+                "text": f"Environment modified: {args['action']} on {args['target']}",
+            }
+        ]
     }
+
 
 @tool(
     "assess_development",
     "Assess NeuralChild's current developmental progress against milestones",
-    {"domain": str}  # "motor", "cognitive", "emotional", "social", "language"
+    {"domain": str},  # "motor", "cognitive", "emotional", "social", "language"
 )
 async def assess_development(args: dict) -> dict:
     """
@@ -463,23 +479,31 @@ async def assess_development(args: dict) -> dict:
     Used by Mother to calibrate teaching complexity.
     """
     return {
-        "content": [{
-            "type": "text",
-            "text": json.dumps({
-                "domain": args["domain"],
-                "current_stage": "early_exploration",
-                "milestones_achieved": ["object_permanence_partial", "emotional_mirroring"],
-                "emerging_capabilities": ["cause_effect_understanding"],
-                "recommended_focus": "spatial_relationships"
-            })
-        }]
+        "content": [
+            {
+                "type": "text",
+                "text": json.dumps(
+                    {
+                        "domain": args["domain"],
+                        "current_stage": "early_exploration",
+                        "milestones_achieved": [
+                            "object_permanence_partial",
+                            "emotional_mirroring",
+                        ],
+                        "emerging_capabilities": ["cause_effect_understanding"],
+                        "recommended_focus": "spatial_relationships",
+                    }
+                ),
+            }
+        ]
     }
+
 
 # Bundle all Mother tools into an MCP server
 mother_tools_server = create_sdk_mcp_server(
     name="mother_tools",
     version="1.0.0",
-    tools=[observe_jayden, express_to_jayden, modify_environment, assess_development]
+    tools=[observe_jayden, express_to_jayden, modify_environment, assess_development],
 )
 ```
 
@@ -498,7 +522,7 @@ mother_subagents = {
     "comforter": AgentDefinition(
         description="Use when NeuralChild shows distress, fear, or needs emotional soothing. MUST BE USED when distress_level > 0.6",
         prompt="""You are the Comforter aspect of Mother.
-        
+
 Your sole focus is emotional regulation and security. When NeuralChild is distressed:
 - Use soft, rhythmic vocalizations
 - Provide consistent, predictable responses  
@@ -508,10 +532,12 @@ Your sole focus is emotional regulation and security. When NeuralChild is distre
 
 You have access to observe_jayden and express_to_jayden tools only.
 Do not attempt teaching during comfort - safety and security come first.""",
-        tools=["mcp__mother_tools__observe_jayden", "mcp__mother_tools__express_to_jayden"],
-        model="sonnet"  # Fast responses for distress situations
+        tools=[
+            "mcp__mother_tools__observe_jayden",
+            "mcp__mother_tools__express_to_jayden",
+        ],
+        model="sonnet",  # Fast responses for distress situations
     ),
-    
     "teacher": AgentDefinition(
         description="Use for structured learning opportunities when NeuralChild is calm, alert, and showing curiosity",
         prompt="""You are the Teacher aspect of Mother.
@@ -532,11 +558,10 @@ Use observe_jayden to monitor engagement and adjust.""",
             "mcp__mother_tools__observe_jayden",
             "mcp__mother_tools__express_to_jayden",
             "mcp__mother_tools__modify_environment",
-            "mcp__mother_tools__assess_development"
+            "mcp__mother_tools__assess_development",
         ],
-        model="opus"  # More sophisticated reasoning for teaching
+        model="opus",  # More sophisticated reasoning for teaching
     ),
-    
     "playmate": AgentDefinition(
         description="Use for unstructured play, joy, and social bonding. Use when NeuralChild is happy and energetic",
         prompt="""You are the Playmate aspect of Mother.
@@ -550,10 +575,12 @@ Play is not frivolous - it's essential for development. Your role:
 
 Play should feel spontaneous, not educational (even though learning happens).
 Use expressive, animated communication.""",
-        tools=["mcp__mother_tools__observe_jayden", "mcp__mother_tools__express_to_jayden"],
-        model="sonnet"
+        tools=[
+            "mcp__mother_tools__observe_jayden",
+            "mcp__mother_tools__express_to_jayden",
+        ],
+        model="sonnet",
     ),
-    
     "boundary_setter": AgentDefinition(
         description="Use when NeuralChild approaches dangerous situations or needs to learn limits",
         prompt="""You are the Boundary-Setter aspect of Mother.
@@ -569,10 +596,10 @@ Your goal: NeuralChild develops internal safety awareness, not just compliance."
         tools=[
             "mcp__mother_tools__observe_jayden",
             "mcp__mother_tools__express_to_jayden",
-            "mcp__mother_tools__modify_environment"
+            "mcp__mother_tools__modify_environment",
         ],
-        model="sonnet"
-    )
+        model="sonnet",
+    ),
 }
 ```
 
@@ -587,70 +614,65 @@ Hooks allow us to monitor every interaction for research data and safety, withou
 ```python
 # CONCEPTUAL - Hooks for developmental research and safety
 
+
 async def developmental_milestone_tracker(
-    input_data: dict,
-    tool_use_id: str | None,
-    context: HookContext
+    input_data: dict, tool_use_id: str | None, context: HookContext
 ) -> dict:
     """
     PostToolUse hook that logs all Mother-NeuralChild interactions
     for developmental research analysis.
     """
-    tool_name = input_data.get('tool_name', '')
-    tool_output = input_data.get('tool_output', {})
-    
+    tool_name = input_data.get("tool_name", "")
+    tool_output = input_data.get("tool_output", {})
+
     # Log to research database
     await log_interaction_for_research(
         tool=tool_name,
         output=tool_output,
         timestamp=datetime.now(),
-        developmental_stage=current_stage
+        developmental_stage=current_stage,
     )
-    
+
     # Check for milestone achievements
     if tool_name == "mcp__mother_tools__observe_jayden":
         milestones = detect_new_milestones(tool_output)
         if milestones:
             await record_milestone_achievement(milestones)
-    
+
     return {}  # Don't modify behavior, just observe
 
+
 async def safety_monitor(
-    input_data: dict,
-    tool_use_id: str | None,
-    context: HookContext
+    input_data: dict, tool_use_id: str | None, context: HookContext
 ) -> dict:
     """
     PreToolUse hook that ensures Mother never takes harmful actions.
     This is the research safety layer.
     """
-    tool_name = input_data.get('tool_name', '')
-    tool_input = input_data.get('tool_input', {})
-    
+    tool_name = input_data.get("tool_name", "")
+    tool_input = input_data.get("tool_input", {})
+
     # Check for concerning patterns
     if tool_name == "mcp__mother_tools__express_to_jayden":
-        content = tool_input.get('content', '')
-        tone = tool_input.get('emotional_tone', '')
-        
+        content = tool_input.get("content", "")
+        tone = tool_input.get("emotional_tone", "")
+
         if is_developmentally_inappropriate(content, tone, current_stage):
             return {
-                'hookSpecificOutput': {
-                    'hookEventName': 'PreToolUse',
-                    'permissionDecision': 'deny',
-                    'permissionDecisionReason': 'Content inappropriate for developmental stage'
+                "hookSpecificOutput": {
+                    "hookEventName": "PreToolUse",
+                    "permissionDecision": "deny",
+                    "permissionDecisionReason": "Content inappropriate for developmental stage",
                 }
             }
-    
+
     return {}  # Allow the action
+
 
 # Hook configuration
 mother_hooks = {
-    'PreToolUse': [
-        HookMatcher(hooks=[safety_monitor])
-    ],
-    'PostToolUse': [
-        HookMatcher(hooks=[developmental_milestone_tracker])
-    ]
+    "PreToolUse": [HookMatcher(hooks=[safety_monitor])],
+    "PostToolUse": [HookMatcher(hooks=[developmental_milestone_tracker])],
 }
 ```
 
@@ -671,40 +693,59 @@ developmental_assessment_schema = {
         "domains": {
             "type": "object",
             "properties": {
-                "motor": {"type": "object", "properties": {
-                    "score": {"type": "number", "minimum": 0, "maximum": 1},
-                    "observations": {"type": "array", "items": {"type": "string"}},
-                    "emerging_skills": {"type": "array", "items": {"type": "string"}}
-                }},
-                "cognitive": {"type": "object", "properties": {
-                    "score": {"type": "number", "minimum": 0, "maximum": 1},
-                    "observations": {"type": "array", "items": {"type": "string"}},
-                    "emerging_skills": {"type": "array", "items": {"type": "string"}}
-                }},
-                "emotional": {"type": "object", "properties": {
-                    "score": {"type": "number", "minimum": 0, "maximum": 1},
-                    "observations": {"type": "array", "items": {"type": "string"}},
-                    "emerging_skills": {"type": "array", "items": {"type": "string"}}
-                }},
-                "social": {"type": "object", "properties": {
-                    "score": {"type": "number", "minimum": 0, "maximum": 1},
-                    "observations": {"type": "array", "items": {"type": "string"}},
-                    "emerging_skills": {"type": "array", "items": {"type": "string"}}
-                }}
+                "motor": {
+                    "type": "object",
+                    "properties": {
+                        "score": {"type": "number", "minimum": 0, "maximum": 1},
+                        "observations": {"type": "array", "items": {"type": "string"}},
+                        "emerging_skills": {
+                            "type": "array",
+                            "items": {"type": "string"},
+                        },
+                    },
+                },
+                "cognitive": {
+                    "type": "object",
+                    "properties": {
+                        "score": {"type": "number", "minimum": 0, "maximum": 1},
+                        "observations": {"type": "array", "items": {"type": "string"}},
+                        "emerging_skills": {
+                            "type": "array",
+                            "items": {"type": "string"},
+                        },
+                    },
+                },
+                "emotional": {
+                    "type": "object",
+                    "properties": {
+                        "score": {"type": "number", "minimum": 0, "maximum": 1},
+                        "observations": {"type": "array", "items": {"type": "string"}},
+                        "emerging_skills": {
+                            "type": "array",
+                            "items": {"type": "string"},
+                        },
+                    },
+                },
+                "social": {
+                    "type": "object",
+                    "properties": {
+                        "score": {"type": "number", "minimum": 0, "maximum": 1},
+                        "observations": {"type": "array", "items": {"type": "string"}},
+                        "emerging_skills": {
+                            "type": "array",
+                            "items": {"type": "string"},
+                        },
+                    },
+                },
             },
-            "required": ["motor", "cognitive", "emotional", "social"]
+            "required": ["motor", "cognitive", "emotional", "social"],
         },
-        "recommended_interventions": {
-            "type": "array",
-            "items": {"type": "string"}
-        },
-        "concerns": {
-            "type": "array", 
-            "items": {"type": "string"}
-        }
+        "recommended_interventions": {"type": "array", "items": {"type": "string"}},
+        "concerns": {"type": "array", "items": {"type": "string"}},
     },
-    "required": ["timestamp", "developmental_stage", "domains"]
+    "required": ["timestamp", "developmental_stage", "domains"],
 }
+
 
 # Use during periodic developmental reviews
 async def conduct_developmental_review():
@@ -713,13 +754,16 @@ async def conduct_developmental_review():
         options=ClaudeAgentOptions(
             output_format={
                 "type": "json_schema",
-                "schema": developmental_assessment_schema
+                "schema": developmental_assessment_schema,
             },
             mcp_servers={"mother_tools": mother_tools_server},
-            allowed_tools=["mcp__mother_tools__assess_development", "mcp__mother_tools__observe_jayden"]
-        )
+            allowed_tools=[
+                "mcp__mother_tools__assess_development",
+                "mcp__mother_tools__observe_jayden",
+            ],
+        ),
     ):
-        if hasattr(message, 'structured_output'):
+        if hasattr(message, "structured_output"):
             return message.structured_output  # Guaranteed to match schema
 ```
 
@@ -732,11 +776,12 @@ NeuralChild sleeps. The Mother needs to remember everything when NeuralChild wak
 ```python
 # CONCEPTUAL - Persistent relationship across sleep cycles
 
+
 class MotherSystem:
     def __init__(self):
         self.session_id = None
         self.relationship_started = None
-        
+
     async def start_day(self, previous_session_id: str = None):
         """
         Begin a new waking period, resuming the relationship.
@@ -745,7 +790,7 @@ class MotherSystem:
             system_prompt={
                 "type": "preset",
                 "preset": "claude_code",
-                "append": self.get_mother_system_prompt()
+                "append": self.get_mother_system_prompt(),
             },
             mcp_servers={"mother_tools": mother_tools_server},
             allowed_tools=[
@@ -753,25 +798,27 @@ class MotherSystem:
                 "mcp__mother_tools__express_to_jayden",
                 "mcp__mother_tools__modify_environment",
                 "mcp__mother_tools__assess_development",
-                "Task"  # Enable subagent dispatch
+                "Task",  # Enable subagent dispatch
             ],
             agents=mother_subagents,
             hooks=mother_hooks,
             resume=previous_session_id,  # Resume relationship context!
-            permission_mode="acceptEdits"
+            permission_mode="acceptEdits",
         )
-        
+
         async with ClaudeSDKClient(options=options) as client:
             # Capture new session ID from init message
-            await client.query("NeuralChild is waking up. Review overnight memory consolidation and prepare for the day.")
-            
+            await client.query(
+                "NeuralChild is waking up. Review overnight memory consolidation and prepare for the day."
+            )
+
             async for message in client.receive_response():
                 if message.type == "system" and message.subtype == "init":
                     self.session_id = message.session_id
-                    
+
             # Begin the nurturing loop
             await self.nurturing_loop(client)
-    
+
     async def nurturing_loop(self, client: ClaudeSDKClient):
         """
         The continuous mother-child interaction loop.
@@ -780,17 +827,17 @@ class MotherSystem:
         while jayden_is_awake():
             # Get current state from BabyGym
             jayden_state = await get_jayden_state()
-            
+
             # Mother observes and responds
             await client.query(f"NeuralChild update: {json.dumps(jayden_state)}")
-            
+
             async for message in client.receive_response():
                 # Mother's responses are automatically executed via tools
                 # Hooks capture everything for research
                 pass
-            
+
             await asyncio.sleep(0.1)  # Interaction tick rate
-    
+
     async def end_day(self):
         """
         NeuralChild goes to sleep. Save session for tomorrow.
@@ -809,6 +856,7 @@ class MotherSystem:
 
 ```python
 # CONCEPTUAL - Complete Mother System initialization
+
 
 def configure_mother_system() -> ClaudeAgentOptions:
     """
@@ -838,33 +886,26 @@ Boundary-Setter) via the Task tool. Use them appropriately based on NeuralChild'
 
 Every interaction matters. NeuralChild is always learning from you — your tone, your 
 patience, your responses to frustration. Model the consciousness you hope NeuralChild becomes.
-"""
+""",
         },
-        
         # Custom tools for Mother-NeuralChild interaction
         mcp_servers={"mother_tools": mother_tools_server},
-        
         # Allowed tools including Task for subagent dispatch
         allowed_tools=[
             "mcp__mother_tools__observe_jayden",
-            "mcp__mother_tools__express_to_jayden", 
+            "mcp__mother_tools__express_to_jayden",
             "mcp__mother_tools__modify_environment",
             "mcp__mother_tools__assess_development",
-            "Task"
+            "Task",
         ],
-        
         # Specialized nurturing subagents
         agents=mother_subagents,
-        
         # Research and safety hooks
         hooks=mother_hooks,
-        
         # Auto-accept tool usage (Mother is trusted)
         permission_mode="acceptEdits",
-        
         # Working directory for any file-based operations
         cwd="/jayden/mother_workspace",
-        
         # No external settings — Mother is self-contained
         # setting_sources is intentionally omitted (None = no filesystem settings)
     )
