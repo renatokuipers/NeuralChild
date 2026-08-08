@@ -43,8 +43,8 @@ consumer, the port is premature.
 | # | Stage | Step | Skill / action | Boundary after | Done |
 |---|---|---|---|---|---|
 | 0.1 | Precondition | Tracker and doc layout configured, labels named | `/setup-matt-pocock-skills` | — | [x] |
-| 1.1 | Resurrect | File blocking defects as tickets | `/to-tickets` | Continue | [ ] |
-| 1.2 | Resurrect | Make the test harness go red | `/implement` → `/tdd` | `/clear` | [ ] |
+| 1.1 | Resurrect | File blocking defects as tickets | `/to-tickets` | Continue | [x] |
+| 1.2 | Resurrect | Make the test harness go red | `/implement` → `/tdd` | `/clear` | [x] |
 | 1.3 | Resurrect | Fix each defect, one ticket per window | `/implement` → `/tdd` → `/code-review` | `/clear` **between every ticket** | [ ] |
 | 1.4 | Resurrect | Any fix that misbehaves against prediction | `/diagnosing-bugs` | `/clear` | [ ] |
 | 1.5 | Resurrect | **Gate: a run reaches TODDLER** | run it, capture output | `/clear` | [ ] |

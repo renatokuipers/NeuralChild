@@ -21,7 +21,7 @@ dependencies = [
     "pyyaml>=6.0",
     "numpy>=1.20.0",
 ]
-requires-python = ">=3.8"
+requires-python = ">=3.11"
 
 [project.optional-dependencies]
 dev = [
@@ -45,8 +45,38 @@ pythonpath = ["."]
 
 [tool.black]
 line-length = 88
-target-version = ["py38"]
+target-version = ["py311"]
 
 [tool.isort]
 profile = "black"
 line_length = 88
+
+[tool.mypy]
+explicit_package_bases = true
+exclude = ['(^|/)(\.venv|build|dist|logs)/']
+no_implicit_optional = true
+
+[[tool.mypy.overrides]]
+module = ["dash_bootstrap_components.*", "plotly.*", "pandas.*", "colorama.*"]
+ignore_missing_imports = true
+
+[tool.ruff.lint]
+extend-select = ["NPY", "PERF", "S", "PTH", "TRY", "ARG", "LOG", "G", "DTZ", "ERA", "C901"]
+ignore = ["S311"] 
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S101"] 
+
+[tool.ruff.lint.mccabe]
+max-complexity = 10
+
+[tool.ruff]
+target-version = "py311"
+
+[tool.vulture]
+min_confidence = 80
+paths = ["."]
+ignore_decorators = ["@app.callback", "@validator", "@field_validator",
+                     "@root_validator", "@model_validator", "@pytest.fixture"]
+ignore_names = ["n_intervals", "arbitrary_types_allowed", "validate_assignment",
+                "extra", "frame", "sig"]

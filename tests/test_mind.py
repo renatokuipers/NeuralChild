@@ -57,7 +57,7 @@ def test_belief_network_indexes_evidence_and_relations_under_the_same_identity()
     """The evidence index and the relationship table are keyed by the belief's own id."""
     network = BeliefNetwork()
     belief = Belief(
-        subject="ball", predicate="is", object="red", supporting_memories=["mem-1"]
+        subject="ball", predicate="is", object="red", supporting_memories=["mem-1"],
     )
     belief_id = network.add_belief(belief)
     assert network.evidence_index["mem-1"] == [belief_id]
@@ -75,9 +75,9 @@ def test_belief_network_from_dict_restores_the_identity_it_keyed_by(caplog):
                     "predicate": "provides",
                     "object": "comfort",
                     "confidence": 0.75,
-                }
-            }
-        }
+                },
+            },
+        },
     )
     assert restored.beliefs["belief-1"].id == "belief-1"
     assert "stale-identity" in caplog.text
@@ -96,7 +96,7 @@ def test_a_belief_message_forms_a_belief_the_mind_keeps(mind):
                 "object": "red",
                 "confidence": 0.6,
             },
-        )
+        ),
     )
     mind.process_messages()
     assert [belief.object for belief in mind.get_beliefs_about("ball")] == ["red"]
@@ -135,7 +135,7 @@ def test_save_state_writes_a_checkpoint_that_loads_back(mind, checkpoint_dir):
     for index in range(3):
         mind.process_input(sensory_input(index))
     mind.belief_network.beliefs["belief-1"] = Belief(
-        subject="ball", predicate="is", object="red", confidence=0.6
+        subject="ball", predicate="is", object="red", confidence=0.6,
     )
     memories_before = mind.developmental_milestones["memories_formed"]
 
@@ -160,7 +160,7 @@ def test_save_state_writes_a_checkpoint_that_loads_back(mind, checkpoint_dir):
         st.floats(min_value=-2.0, max_value=2.0, allow_nan=False, allow_infinity=False),
         min_size=1,
         max_size=25,
-    )
+    ),
 )
 def test_need_intensity_never_leaves_the_unit_range(deltas):
     """No sequence of intensity updates can push a need outside [0, 1]."""
