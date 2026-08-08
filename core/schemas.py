@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 from typing import Dict, Any, List, Optional, Union
 from datetime import datetime
 from enum import Enum, auto
+import uuid
 import torch
 
 class DevelopmentalStage(Enum):
@@ -123,7 +124,11 @@ class Belief(BaseModel):
     
     Beliefs are mental constructs that represent the mind's
     understanding of concepts and relationships in the world.
+
+    The id is the identity a BeliefNetwork keys the belief by, in its beliefs,
+    evidence_index and belief_relationships alike.
     """
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     subject: str
     predicate: str
     object: str

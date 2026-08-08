@@ -111,12 +111,8 @@ class BeliefNetwork(BaseModel):
         Returns:
             ID of the added belief
         """
-        # Generate ID if not present
-        belief_id = getattr(belief, 'id', None)
-        if belief_id is None:
-            belief_id = str(uuid.uuid4())
-            belief.id = belief_id
-            
+        belief_id = belief.id
+
         # Add to beliefs dictionary
         self.beliefs[belief_id] = belief
         
@@ -493,7 +489,11 @@ class BeliefNetwork(BaseModel):
             # Convert timestamp strings to datetime
             creation_time = datetime.fromisoformat(belief_data.pop("creation_time", datetime.now().isoformat()))
             last_update_time = datetime.fromisoformat(belief_data.pop("last_update_time", datetime.now().isoformat()))
-            
+
+            stored_id = belief_data.pop("id", None)
+            if stored_id is not None and stored_id != belief_id:
+                logger.warning(f"Belief keyed {belief_id} stores id {stored_id}; keeping {belief_id}")
+
             # Create belief
             belief = Belief(
                 id=belief_id,
