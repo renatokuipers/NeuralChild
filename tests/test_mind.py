@@ -6,7 +6,7 @@ import os
 from hypothesis import given
 from hypothesis import strategies as st
 
-from core.schemas import Belief, DevelopmentalStage, Need
+from core.schemas import Belief, DevelopmentalStage, Need, NetworkMessage
 from mind.mind_core import BeliefNetwork, Mind
 
 CHECKPOINT_FILES = ("mind_state.json", "memories.json", "beliefs.json", "needs.json")
@@ -51,6 +51,55 @@ def test_belief_network_assigns_an_identity_on_add():
     belief_id = network.add_belief(belief)
     assert belief_id in network.beliefs
     assert getattr(belief, "id", None) == belief_id
+
+
+def test_belief_network_indexes_evidence_and_relations_under_the_same_identity():
+    """The evidence index and the relationship table are keyed by the belief's own id."""
+    network = BeliefNetwork()
+    belief = Belief(
+        subject="ball", predicate="is", object="red", supporting_memories=["mem-1"]
+    )
+    belief_id = network.add_belief(belief)
+    assert network.evidence_index["mem-1"] == [belief_id]
+    assert network.belief_relationships[belief_id] == {}
+
+
+def test_belief_network_from_dict_restores_the_identity_it_keyed_by():
+    """A reloaded belief takes its id from the key it was stored under, not from its payload."""
+    restored = BeliefNetwork.from_dict(
+        {
+            "beliefs": {
+                "belief-1": {
+                    "id": "stale-identity",
+                    "subject": "mother",
+                    "predicate": "provides",
+                    "object": "comfort",
+                    "confidence": 0.75,
+                }
+            }
+        }
+    )
+    assert restored.beliefs["belief-1"].id == "belief-1"
+
+
+def test_a_belief_message_forms_a_belief_the_mind_keeps(mind):
+    """A belief message off the bus survives into the network and counts as a milestone."""
+    mind.message_bus.publish(
+        NetworkMessage(
+            sender="thoughts",
+            receiver="mind",
+            message_type="belief",
+            content={
+                "subject": "ball",
+                "predicate": "is",
+                "object": "red",
+                "confidence": 0.6,
+            },
+        )
+    )
+    mind.process_messages()
+    assert [belief.object for belief in mind.get_beliefs_about("ball")] == ["red"]
+    assert mind.developmental_milestones["beliefs_formed"] == 1
 
 
 def test_belief_network_round_trips_through_dict():
