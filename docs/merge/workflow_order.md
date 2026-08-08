@@ -14,6 +14,10 @@ Work top to bottom. Tick a row only when its **exit criterion** is demonstrated,
 work feels done. Where a row says `/clear` or `/handoff`, that is a required step — skipping it
 is how the last two attempts at this project accumulated context debt.
 
+The slash commands in the Skill column are agent skills installed at the user level, not files in
+this repo — `/setup-matt-pocock-skills` installs the set, and `/ask-matt` routes a situation to
+the right one. A row whose skill is unavailable still names what has to happen; run it by hand.
+
 ## Ground rules
 
 **Context hygiene.** Grilling → spec → tickets stay in **one unbroken window**; do not clear or
@@ -38,7 +42,7 @@ consumer, the port is premature.
 
 | # | Stage | Step | Skill / action | Boundary after | Done |
 |---|---|---|---|---|---|
-| 0.1 | Precondition | Tracker, labels, doc layout configured | `/setup-matt-pocock-skills` | — | [x] |
+| 0.1 | Precondition | Tracker and doc layout configured, labels named | `/setup-matt-pocock-skills` | — | [x] |
 | 1.1 | Resurrect | File blocking defects as tickets | `/to-tickets` | Continue | [ ] |
 | 1.2 | Resurrect | Make the test harness go red | `/implement` → `/tdd` | `/clear` | [ ] |
 | 1.3 | Resurrect | Fix each defect, one ticket per window | `/implement` → `/tdd` → `/code-review` | `/clear` **between every ticket** | [ ] |
@@ -64,8 +68,12 @@ consumer, the port is premature.
 ### Stage 0 — Precondition (complete)
 
 `CLAUDE.md` and [`docs/agents/`](../agents/) exist: GitHub Issues via `gh`, external PRs enabled
-as a triage surface, five canonical triage labels, single-context doc layout. `CONTEXT.md` and
-`docs/adr/` do **not** exist yet — by design, they are created lazily at step 2.2.
+as a triage surface, the five canonical triage labels named, single-context doc layout.
+`CONTEXT.md` and `docs/adr/` do **not** exist yet — by design, they are created lazily at step 2.2.
+
+**The labels are named in `docs/agents/`, not all created on the tracker.** Only `ready-for-agent`
+exists, created when step 1.1 needed it to file tickets. `needs-triage`, `needs-info` and
+`ready-for-human` are still absent — create them before a step reaches for one.
 
 ### Stage 1 — Resurrect
 
@@ -95,10 +103,10 @@ One correction to fold in: §8 defect 11 overstates. `developmental_weights` is 
 registration is 0.00280, not zero. The seeding only bites a network that is never registered.
 
 **Step 1.2 comes before every fix.** All five test files are 2-byte stubs, which is why every
-defect above shipped silently. `/tdd` needs something that can go red. `pytest` 8.4.2 and
-`hypothesis` 6.155.2 are both importable in `F:/envs/5070_11`, but `pyproject.toml` declares only
-`pytest>=7.0.0` — adding `hypothesis` to the `dev` extra is part of this step. It suits a
-simulation full of invariants.
+defect above shipped silently. `/tdd` needs something that can go red. Both `pytest` and
+`hypothesis` are already importable in the project environment, but `pyproject.toml` declares only
+`pytest` — adding `hypothesis` to the `dev` extra is part of this step. It suits a simulation full
+of invariants.
 
 **Exit criterion for 1.5.** A run that reaches TODDLER — which this project has never done. One
 synthetic emotion message carrying three emotions moves `emotions_experienced` 0 → 3, exactly the
