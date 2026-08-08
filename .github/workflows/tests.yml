@@ -17,10 +17,13 @@ jobs:
 
       - uses: astral-sh/setup-uv@v5
 
+      # Dependencies only, never `-e .`: pyproject declares a `neuralchild` package
+      # that does not exist in this flat layout, so building the project fails (#10).
+      # The suite imports through pythonpath, exactly as it does locally.
       - name: Install
         run: |
           uv pip install --system torch --index-url https://download.pytorch.org/whl/cpu
-          uv pip install --system -e ".[dev]"
+          uv pip install --system -r pyproject.toml --extra dev
 
       - name: Collection succeeds
         run: pytest --collect-only -q
