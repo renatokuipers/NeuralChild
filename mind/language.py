@@ -7,7 +7,7 @@ to complex sentences as development progresses.
 import logging
 import random
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Set
+from typing import Any
 
 import numpy as np
 import torch
@@ -21,16 +21,32 @@ from mind.schemas import LanguageAbility
 # Configure logging
 logger = logging.getLogger(__name__)
 
+
 class VocabularyEntry(BaseModel):
     """A word in the language network's vocabulary."""
 
     word: str = Field(..., description="The word itself")
-    acquisition_time: datetime = Field(default_factory=datetime.now, description="When this word was learned")
-    usage_count: int = Field(default=0, description="How many times this word has been used")
-    familiarity: float = Field(default=0.5, ge=0.0, le=1.0, description="How familiar the mind is with this word")
-    embedding: Optional[List[float]] = Field(default=None, description="Vector representation of the word")
-    associations: Set[str] = Field(default_factory=set, description="Other words associated with this one")
-    part_of_speech: Optional[str] = Field(default=None, description="Noun, verb, adjective, etc.")
+    acquisition_time: datetime = Field(
+        default_factory=datetime.now, description="When this word was learned"
+    )
+    usage_count: int = Field(
+        default=0, description="How many times this word has been used"
+    )
+    familiarity: float = Field(
+        default=0.5,
+        ge=0.0,
+        le=1.0,
+        description="How familiar the mind is with this word",
+    )
+    embedding: list[float] | None = Field(
+        default=None, description="Vector representation of the word"
+    )
+    associations: set[str] = Field(
+        default_factory=set, description="Other words associated with this one"
+    )
+    part_of_speech: str | None = Field(
+        default=None, description="Noun, verb, adjective, etc."
+    )
 
     class Config:
         arbitrary_types_allowed = True
@@ -47,7 +63,7 @@ class VocabularyEntry(BaseModel):
         self.familiarity = min(1.0, self.familiarity + amount)
         self.usage_count += 1
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary representation."""
         return {
             "word": self.word,
@@ -59,21 +75,32 @@ class VocabularyEntry(BaseModel):
             "part_of_speech": self.part_of_speech,
         }
 
+
 class SyntaxRule(BaseModel):
     """A grammatical rule for sentence construction."""
 
     rule_id: str = Field(..., description="Unique identifier for this rule")
-    pattern: List[str] = Field(..., description="Parts of speech pattern, e.g. ['noun', 'verb', 'noun']")
-    complexity: float = Field(default=0.5, ge=0.0, le=1.0, description="How complex this rule is")
-    acquisition_stage: DevelopmentalStage = Field(..., description="Stage at which this rule is typically acquired")
-    mastery: float = Field(default=0.0, ge=0.0, le=1.0, description="How well this rule has been mastered")
-    examples: List[str] = Field(default_factory=list, description="Example sentences using this rule")
+    pattern: list[str] = Field(
+        ..., description="Parts of speech pattern, e.g. ['noun', 'verb', 'noun']"
+    )
+    complexity: float = Field(
+        default=0.5, ge=0.0, le=1.0, description="How complex this rule is"
+    )
+    acquisition_stage: DevelopmentalStage = Field(
+        ..., description="Stage at which this rule is typically acquired"
+    )
+    mastery: float = Field(
+        default=0.0, ge=0.0, le=1.0, description="How well this rule has been mastered"
+    )
+    examples: list[str] = Field(
+        default_factory=list, description="Example sentences using this rule"
+    )
 
     def increase_mastery(self, amount: float = 0.05) -> None:
         """Increase mastery of this syntax rule."""
         self.mastery = min(1.0, self.mastery + amount)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary representation."""
         return {
             "rule_id": self.rule_id,
@@ -84,16 +111,19 @@ class SyntaxRule(BaseModel):
             "examples": self.examples,
         }
 
+
 class LanguageNetwork(NeuralNetwork):
     """Language network that processes and generates language.
-    
+
     This network handles language acquisition, evolving from pre-linguistic sounds
     to complex sentences as the mind develops through different stages.
     """
 
-    def __init__(self, input_dim: int = 96, hidden_dim: int = 192, output_dim: int = 48):
+    def __init__(
+        self, input_dim: int = 96, hidden_dim: int = 192, output_dim: int = 48
+    ):
         """Initialize the language network.
-        
+
         Args:
             input_dim: Dimension of input vectors
             hidden_dim: Dimension of hidden layers
@@ -136,11 +166,11 @@ class LanguageNetwork(NeuralNetwork):
         self.cell = None
 
         # Vocabulary growth properties
-        self.vocabulary: Dict[str, VocabularyEntry] = {}
+        self.vocabulary: dict[str, VocabularyEntry] = {}
         self.vocabulary_embedding_dim = 16  # Size of word embeddings
 
         # Syntax rules by developmental stage
-        self.syntax_rules: Dict[str, SyntaxRule] = {}
+        self.syntax_rules: dict[str, SyntaxRule] = {}
 
         # Language abilities that develop over time
         self.language_ability = LanguageAbility(
@@ -151,14 +181,44 @@ class LanguageNetwork(NeuralNetwork):
         )
 
         # Recent utterances (both input and output)
-        self.recent_utterances: List[Dict[str, Any]] = []
+        self.recent_utterances: list[dict[str, Any]] = []
 
         # Word categories for developmental language learning
         self.word_categories = {
-            "nouns": ["mama", "dada", "baby", "toy", "food", "milk", "dog", "cat", "ball"],
+            "nouns": [
+                "mama",
+                "dada",
+                "baby",
+                "toy",
+                "food",
+                "milk",
+                "dog",
+                "cat",
+                "ball",
+            ],
             "verbs": ["want", "see", "go", "eat", "play", "sleep", "give", "take"],
-            "adjectives": ["big", "small", "good", "bad", "hot", "cold", "happy", "sad"],
-            "function_words": ["in", "on", "up", "down", "this", "that", "my", "your", "the", "a"],
+            "adjectives": [
+                "big",
+                "small",
+                "good",
+                "bad",
+                "hot",
+                "cold",
+                "happy",
+                "sad",
+            ],
+            "function_words": [
+                "in",
+                "on",
+                "up",
+                "down",
+                "this",
+                "that",
+                "my",
+                "your",
+                "the",
+                "a",
+            ],
         }
 
         # Initialize basic vocabulary with infant-appropriate words
@@ -168,13 +228,15 @@ class LanguageNetwork(NeuralNetwork):
         self._initialize_syntax_rules()
 
         # Initialize state parameters
-        self.update_state({
-            "vocabulary_size": len(self.vocabulary),
-            "sentence_complexity": self.language_ability.sentence_complexity,
-            "understanding_level": self.language_ability.understanding_level,
-            "expression_level": self.language_ability.expression_level,
-            "recent_utterances": [],
-        })
+        self.update_state(
+            {
+                "vocabulary_size": len(self.vocabulary),
+                "sentence_complexity": self.language_ability.sentence_complexity,
+                "understanding_level": self.language_ability.understanding_level,
+                "expression_level": self.language_ability.expression_level,
+                "recent_utterances": [],
+            }
+        )
 
     def _initialize_vocabulary(self) -> None:
         """Initialize basic vocabulary appropriate for infant stage."""
@@ -264,15 +326,18 @@ class LanguageNetwork(NeuralNetwork):
             complexity=0.8,
             acquisition_stage=DevelopmentalStage.ADOLESCENT,
             mastery=0.0,
-            examples=["I like dogs but cats are nice", "She reads books when time allows"],
+            examples=[
+                "I like dogs but cats are nice",
+                "She reads books when time allows",
+            ],
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Forward pass of the neural network.
-        
+
         Args:
             x: Input tensor representing language input
-            
+
         Returns:
             Output tensor representing language processing result
 
@@ -289,11 +354,17 @@ class LanguageNetwork(NeuralNetwork):
 
         # Initialize hidden state if None
         if self.hidden is None or self.cell is None:
-            self.hidden = torch.zeros(2, batch_size, self.lstm.hidden_size, device=x.device)
-            self.cell = torch.zeros(2, batch_size, self.lstm.hidden_size, device=x.device)
+            self.hidden = torch.zeros(
+                2, batch_size, self.lstm.hidden_size, device=x.device
+            )
+            self.cell = torch.zeros(
+                2, batch_size, self.lstm.hidden_size, device=x.device
+            )
 
         # Process through LSTM
-        lstm_out, (self.hidden, self.cell) = self.lstm(embedded, (self.hidden, self.cell))
+        lstm_out, (self.hidden, self.cell) = self.lstm(
+            embedded, (self.hidden, self.cell)
+        )
 
         # Get last output from LSTM
         last_output = lstm_out[:, -1, :]
@@ -305,7 +376,17 @@ class LanguageNetwork(NeuralNetwork):
 
             # Blend grammar processing with LSTM output based on developmental stage
             grammar_weight = min(1.0, 0.2 * (self.developmental_stage.value - 1))
-            blended = last_output * (1 - grammar_weight) + grammar_weight * torch.cat([grammar_results, torch.zeros(batch_size, self.lstm.hidden_size - self.output_dim, device=x.device)], dim=1)
+            blended = last_output * (1 - grammar_weight) + grammar_weight * torch.cat(
+                [
+                    grammar_results,
+                    torch.zeros(
+                        batch_size,
+                        self.lstm.hidden_size - self.output_dim,
+                        device=x.device,
+                    ),
+                ],
+                dim=1,
+            )
             result = self.output_layer(blended)
         else:
             # Simple processing for infant stage
@@ -316,12 +397,12 @@ class LanguageNetwork(NeuralNetwork):
 
         return scaled_result
 
-    def process_message(self, message: NetworkMessage) -> Optional[VectorOutput]:
+    def process_message(self, message: NetworkMessage) -> VectorOutput | None:
         """Process a message from another neural network.
-        
+
         Args:
             message: Message from another network
-            
+
         Returns:
             Optional vector output as response
 
@@ -339,9 +420,11 @@ class LanguageNetwork(NeuralNetwork):
 
                 # Ensure vector is the right size
                 if len(vector_data) > self.input_dim:
-                    vector_data = vector_data[:self.input_dim]
+                    vector_data = vector_data[: self.input_dim]
                 elif len(vector_data) < self.input_dim:
-                    vector_data = vector_data + [0.0] * (self.input_dim - len(vector_data))
+                    vector_data = vector_data + [0.0] * (
+                        self.input_dim - len(vector_data)
+                    )
 
                 # Convert to tensor and process
                 input_tensor = torch.tensor(vector_data, dtype=torch.float32)
@@ -364,7 +447,10 @@ class LanguageNetwork(NeuralNetwork):
             )
 
         # Generate language response to emotions
-        if message.message_type == "emotion" and self.developmental_stage.value >= DevelopmentalStage.TODDLER.value:
+        if (
+            message.message_type == "emotion"
+            and self.developmental_stage.value >= DevelopmentalStage.TODDLER.value
+        ):
             if "emotion" in message.content and "intensity" in message.content:
                 emotion = message.content["emotion"]
                 intensity = float(message.content["intensity"])
@@ -374,7 +460,9 @@ class LanguageNetwork(NeuralNetwork):
 
                 # Create a vector to return
                 response_vector = [0.0] * self.output_dim
-                response_vector[1] = intensity  # Use slot 1 for emotional response intensity
+                response_vector[1] = (
+                    intensity  # Use slot 1 for emotional response intensity
+                )
 
                 # Send a message to consciousness with the generated text
                 self._send_language_output(response)
@@ -386,7 +474,10 @@ class LanguageNetwork(NeuralNetwork):
 
         # Respond to query about language ability
         elif message.message_type == "query":
-            if "query_type" in message.content and message.content["query_type"] == "language_ability":
+            if (
+                "query_type" in message.content
+                and message.content["query_type"] == "language_ability"
+            ):
                 # Return vector representation of language ability
                 ability_vector = [
                     min(1.0, len(self.vocabulary) / 1000),  # Normalized vocabulary size
@@ -396,7 +487,9 @@ class LanguageNetwork(NeuralNetwork):
                 ]
 
                 # Pad to output dimension
-                ability_vector = ability_vector + [0.0] * (self.output_dim - len(ability_vector))
+                ability_vector = ability_vector + [0.0] * (
+                    self.output_dim - len(ability_vector)
+                )
 
                 return VectorOutput(
                     source=self.name,
@@ -405,12 +498,12 @@ class LanguageNetwork(NeuralNetwork):
 
         return None
 
-    def _process_language_input(self, text: str) -> Dict[str, Any]:
+    def _process_language_input(self, text: str) -> dict[str, Any]:
         """Process language input and update vocabulary.
-        
+
         Args:
             text: Text input to process
-            
+
         Returns:
             Dictionary with processing results
 
@@ -421,13 +514,15 @@ class LanguageNetwork(NeuralNetwork):
         # Check if the input is a pre-linguistic sound (non-word)
         if not any(c.isalpha() for c in text):
             # Just add to recent utterances and return basic understanding
-            self.recent_utterances.append({
-                "type": "input",
-                "text": text,
-                "timestamp": datetime.now().isoformat(),
-                "words_recognized": 0,
-                "understanding_level": 0.1,
-            })
+            self.recent_utterances.append(
+                {
+                    "type": "input",
+                    "text": text,
+                    "timestamp": datetime.now().isoformat(),
+                    "words_recognized": 0,
+                    "understanding_level": 0.1,
+                }
+            )
 
             return {
                 "type": "pre_linguistic",
@@ -459,13 +554,21 @@ class LanguageNetwork(NeuralNetwork):
                     self.vocabulary[prev_word].associations.add(clean_word)
             else:
                 # Learn new word if mind is capable based on developmental stage
-                learn_probability = 0.1 * self.developmental_stage.value * self.language_ability.understanding_level
+                learn_probability = (
+                    0.1
+                    * self.developmental_stage.value
+                    * self.language_ability.understanding_level
+                )
                 if random.random() < learn_probability:
                     # Create embedding for new word
-                    embedding = list(np.random.uniform(-1, 1, self.vocabulary_embedding_dim))
+                    embedding = list(
+                        np.random.uniform(-1, 1, self.vocabulary_embedding_dim)
+                    )
 
                     # Guess part of speech based on position and patterns
-                    part_of_speech = self._guess_part_of_speech(clean_word, words, words.index(word))
+                    part_of_speech = self._guess_part_of_speech(
+                        clean_word, words, words.index(word)
+                    )
 
                     # Add to vocabulary
                     self.vocabulary[clean_word] = VocabularyEntry(
@@ -476,36 +579,45 @@ class LanguageNetwork(NeuralNetwork):
                     )
 
                     new_words.append(clean_word)
-                    logger.info(f"Learned new word: {clean_word} (guessed POS: {part_of_speech})")
+                    logger.info(
+                        f"Learned new word: {clean_word} (guessed POS: {part_of_speech})"
+                    )
 
         # Update language ability based on vocabulary size
         self.language_ability.vocabulary_size = len(self.vocabulary)
 
         # Calculate understanding level based on recognized words
         if len(words) > 0:
-            understanding = min(1.0, words_recognized / len(words)) * self.language_ability.understanding_level
+            understanding = (
+                min(1.0, words_recognized / len(words))
+                * self.language_ability.understanding_level
+            )
         else:
             understanding = 0.1
 
         # Add to recent utterances
-        self.recent_utterances.append({
-            "type": "input",
-            "text": text,
-            "timestamp": datetime.now().isoformat(),
-            "words_recognized": words_recognized,
-            "understanding_level": understanding,
-        })
+        self.recent_utterances.append(
+            {
+                "type": "input",
+                "text": text,
+                "timestamp": datetime.now().isoformat(),
+                "words_recognized": words_recognized,
+                "understanding_level": understanding,
+            }
+        )
 
         # Limit recent utterances size
         if len(self.recent_utterances) > 10:
             self.recent_utterances = self.recent_utterances[-10:]
 
         # Update state
-        self.update_state({
-            "vocabulary_size": len(self.vocabulary),
-            "recent_utterances": self.recent_utterances,
-            "understanding_level": self.language_ability.understanding_level,
-        })
+        self.update_state(
+            {
+                "vocabulary_size": len(self.vocabulary),
+                "recent_utterances": self.recent_utterances,
+                "understanding_level": self.language_ability.understanding_level,
+            }
+        )
 
         return {
             "type": "words",
@@ -515,14 +627,16 @@ class LanguageNetwork(NeuralNetwork):
             "new_words": new_words,
         }
 
-    def _guess_part_of_speech(self, word: str, sentence: List[str], position: int) -> Optional[str]:
+    def _guess_part_of_speech(
+        self, word: str, sentence: list[str], position: int
+    ) -> str | None:
         """Guess the part of speech of a word based on context.
-        
+
         Args:
             word: Word to analyze
             sentence: Complete sentence
             position: Position of word in sentence
-            
+
         Returns:
             Guessed part of speech or None
 
@@ -550,11 +664,11 @@ class LanguageNetwork(NeuralNetwork):
 
         # Check surrounding known words
         surrounding_words = []
-        if position > 0 and sentence[position-1] in self.vocabulary:
-            surrounding_words.append(self.vocabulary[sentence[position-1]])
+        if position > 0 and sentence[position - 1] in self.vocabulary:
+            surrounding_words.append(self.vocabulary[sentence[position - 1]])
 
-        if position < len(sentence)-1 and sentence[position+1] in self.vocabulary:
-            surrounding_words.append(self.vocabulary[sentence[position+1]])
+        if position < len(sentence) - 1 and sentence[position + 1] in self.vocabulary:
+            surrounding_words.append(self.vocabulary[sentence[position + 1]])
 
         # If we find patterns like adjective + unknown, the unknown is likely a noun
         if any(w.part_of_speech == "adjective" for w in surrounding_words):
@@ -565,11 +679,11 @@ class LanguageNetwork(NeuralNetwork):
 
     def _generate_emotion_response(self, emotion: str, intensity: float) -> str:
         """Generate language response to an emotion.
-        
+
         Args:
             emotion: Emotion name
             intensity: Emotion intensity
-            
+
         Returns:
             Generated text response
 
@@ -601,76 +715,93 @@ class LanguageNetwork(NeuralNetwork):
         if self.developmental_stage == DevelopmentalStage.CHILD:
             # Children use simple sentences
             if emotion == "joy":
-                return random.choice([
-                    "I am happy",
-                    "I like this",
-                    "This is good",
-                    "I feel good",
-                ])
+                return random.choice(
+                    [
+                        "I am happy",
+                        "I like this",
+                        "This is good",
+                        "I feel good",
+                    ]
+                )
             if emotion == "sadness":
-                return random.choice([
-                    "I am sad",
-                    "I feel bad",
-                    "This makes me sad",
-                    "I don't like this",
-                ])
+                return random.choice(
+                    [
+                        "I am sad",
+                        "I feel bad",
+                        "This makes me sad",
+                        "I don't like this",
+                    ]
+                )
             if emotion == "fear":
-                return random.choice([
-                    "I am scared",
-                    "This is scary",
-                    "I feel afraid",
-                    "I don't like this",
-                ])
+                return random.choice(
+                    [
+                        "I am scared",
+                        "This is scary",
+                        "I feel afraid",
+                        "I don't like this",
+                    ]
+                )
             if emotion == "anger":
-                return random.choice([
-                    "I am mad",
-                    "This makes me angry",
-                    "I don't like this",
-                    "Stop this",
-                ])
+                return random.choice(
+                    [
+                        "I am mad",
+                        "This makes me angry",
+                        "I don't like this",
+                        "Stop this",
+                    ]
+                )
             return self._generate_simple_sentence()
 
         # More complex sentences
         if emotion == "joy":
-            return random.choice([
-                "I'm feeling really happy about this.",
-                "This brings me joy.",
-                "I'm experiencing positive emotions right now.",
-                "This makes me feel good.",
-            ])
+            return random.choice(
+                [
+                    "I'm feeling really happy about this.",
+                    "This brings me joy.",
+                    "I'm experiencing positive emotions right now.",
+                    "This makes me feel good.",
+                ]
+            )
         if emotion == "sadness":
-            return random.choice([
-                "I'm feeling sad about this situation.",
-                "This is making me feel down.",
-                "I'm experiencing sadness right now.",
-                "This is disappointing to me.",
-            ])
+            return random.choice(
+                [
+                    "I'm feeling sad about this situation.",
+                    "This is making me feel down.",
+                    "I'm experiencing sadness right now.",
+                    "This is disappointing to me.",
+                ]
+            )
         if emotion == "fear":
-            return random.choice([
-                "This situation makes me feel anxious.",
-                "I'm experiencing fear right now.",
-                "I'm concerned about what's happening.",
-                "This is making me feel uncomfortable.",
-            ])
+            return random.choice(
+                [
+                    "This situation makes me feel anxious.",
+                    "I'm experiencing fear right now.",
+                    "I'm concerned about what's happening.",
+                    "This is making me feel uncomfortable.",
+                ]
+            )
         if emotion == "anger":
-            return random.choice([
-                "I'm feeling frustrated about this.",
-                "This situation is making me angry.",
-                "I'm experiencing irritation right now.",
-                "This is really bothering me.",
-            ])
+            return random.choice(
+                [
+                    "I'm feeling frustrated about this.",
+                    "This situation is making me angry.",
+                    "I'm experiencing irritation right now.",
+                    "This is really bothering me.",
+                ]
+            )
         return self._generate_complex_sentence()
 
     def _generate_simple_sentence(self) -> str:
         """Generate a simple sentence based on vocabulary and syntax rules.
-        
+
         Returns:
             Generated sentence
 
         """
         # Get appropriate rules for current stage
         available_rules = [
-            rule for rule in self.syntax_rules.values()
+            rule
+            for rule in self.syntax_rules.values()
             if rule.acquisition_stage.value <= self.developmental_stage.value
             and rule.mastery > 0.3
         ]
@@ -704,7 +835,8 @@ class LanguageNetwork(NeuralNetwork):
             else:
                 # Find words matching the part of speech
                 matching_words = [
-                    word for word, entry in self.vocabulary.items()
+                    word
+                    for word, entry in self.vocabulary.items()
                     if entry.part_of_speech == part and entry.familiarity > 0.3
                 ]
 
@@ -715,9 +847,13 @@ class LanguageNetwork(NeuralNetwork):
                 elif part == "verb":
                     sentence_parts.append(random.choice(self.word_categories["verbs"]))
                 elif part == "adjective":
-                    sentence_parts.append(random.choice(self.word_categories["adjectives"]))
+                    sentence_parts.append(
+                        random.choice(self.word_categories["adjectives"])
+                    )
                 elif part == "function":
-                    sentence_parts.append(random.choice(self.word_categories["function_words"]))
+                    sentence_parts.append(
+                        random.choice(self.word_categories["function_words"])
+                    )
                 # Unknown part of speech, use anything
                 elif self.vocabulary:
                     sentence_parts.append(random.choice(list(self.vocabulary.keys())))
@@ -730,7 +866,7 @@ class LanguageNetwork(NeuralNetwork):
 
     def _generate_complex_sentence(self) -> str:
         """Generate a more complex sentence for advanced stages.
-        
+
         Returns:
             Generated complex sentence
 
@@ -745,26 +881,30 @@ class LanguageNetwork(NeuralNetwork):
 
     def _send_language_output(self, text: str) -> None:
         """Send generated language to other networks.
-        
+
         Args:
             text: Generated text
 
         """
         # Add to recent utterances
-        self.recent_utterances.append({
-            "type": "output",
-            "text": text,
-            "timestamp": datetime.now().isoformat(),
-        })
+        self.recent_utterances.append(
+            {
+                "type": "output",
+                "text": text,
+                "timestamp": datetime.now().isoformat(),
+            }
+        )
 
         # Limit recent utterances size
         if len(self.recent_utterances) > 10:
             self.recent_utterances = self.recent_utterances[-10:]
 
         # Update state
-        self.update_state({
-            "recent_utterances": self.recent_utterances,
-        })
+        self.update_state(
+            {
+                "recent_utterances": self.recent_utterances,
+            }
+        )
 
         # Create message to send to consciousness
         language_message = NetworkMessage(
@@ -780,13 +920,16 @@ class LanguageNetwork(NeuralNetwork):
         )
 
         # Add to state for the mind to retrieve
-        self.update_state({
-            "pending_messages": self.state.parameters.get("pending_messages", []) + [language_message.to_dict()],
-        })
+        self.update_state(
+            {
+                "pending_messages": self.state.parameters.get("pending_messages", [])
+                + [language_message.to_dict()],
+            }
+        )
 
     def autonomous_step(self) -> None:
         """Autonomous processing step.
-        
+
         This function is called periodically by the mind to allow
         the network to perform autonomous processing.
         """
@@ -803,9 +946,9 @@ class LanguageNetwork(NeuralNetwork):
         # Consolidate word associations
         self._consolidate_word_associations()
 
-    def _generate_spontaneous_utterance(self) -> Optional[str]:
+    def _generate_spontaneous_utterance(self) -> str | None:
         """Generate a spontaneous utterance based on current state.
-        
+
         Returns:
             Generated utterance or None
 
@@ -872,10 +1015,10 @@ class LanguageNetwork(NeuralNetwork):
 
     def update_developmental_stage(self, stage: DevelopmentalStage) -> None:
         """Update the developmental stage of the network.
-        
+
         As the network develops, language abilities improve and more complex
         linguistic structures become available.
-        
+
         Args:
             stage: New developmental stage
 
@@ -913,16 +1056,22 @@ class LanguageNetwork(NeuralNetwork):
 
         if stage in stage_values:
             ability_values = stage_values[stage]
-            self.language_ability.sentence_complexity = ability_values["sentence_complexity"]
-            self.language_ability.understanding_level = ability_values["understanding_level"]
+            self.language_ability.sentence_complexity = ability_values[
+                "sentence_complexity"
+            ]
+            self.language_ability.understanding_level = ability_values[
+                "understanding_level"
+            ]
             self.language_ability.expression_level = ability_values["expression_level"]
 
             # Update state
-            self.update_state({
-                "sentence_complexity": self.language_ability.sentence_complexity,
-                "understanding_level": self.language_ability.understanding_level,
-                "expression_level": self.language_ability.expression_level,
-            })
+            self.update_state(
+                {
+                    "sentence_complexity": self.language_ability.sentence_complexity,
+                    "understanding_level": self.language_ability.understanding_level,
+                    "expression_level": self.language_ability.expression_level,
+                }
+            )
 
         # Add stage-appropriate vocabulary if advancing to a new stage
         self._expand_vocabulary_for_stage(stage)
@@ -944,7 +1093,7 @@ class LanguageNetwork(NeuralNetwork):
 
     def _expand_vocabulary_for_stage(self, stage: DevelopmentalStage) -> None:
         """Expand vocabulary with words appropriate for the developmental stage.
-        
+
         Args:
             stage: Developmental stage to expand vocabulary for
 
@@ -952,10 +1101,61 @@ class LanguageNetwork(NeuralNetwork):
         # Words to potentially add for each stage
         stage_vocabulary = {
             DevelopmentalStage.INFANT: ["mama", "dada", "no", "hi", "baba", "milk"],
-            DevelopmentalStage.TODDLER: ["me", "you", "want", "more", "eat", "play", "big", "hot", "cold", "go", "mine"],
-            DevelopmentalStage.CHILD: ["I", "am", "the", "a", "and", "but", "like", "don't", "because", "what", "who", "when", "where", "good", "bad", "happy", "sad"],
-            DevelopmentalStage.ADOLESCENT: ["think", "feel", "believe", "understand", "sometimes", "never", "always", "maybe", "probably", "interesting", "boring"],
-            DevelopmentalStage.MATURE: ["however", "therefore", "although", "nevertheless", "furthermore", "consider", "hypothetical", "perspective"],
+            DevelopmentalStage.TODDLER: [
+                "me",
+                "you",
+                "want",
+                "more",
+                "eat",
+                "play",
+                "big",
+                "hot",
+                "cold",
+                "go",
+                "mine",
+            ],
+            DevelopmentalStage.CHILD: [
+                "I",
+                "am",
+                "the",
+                "a",
+                "and",
+                "but",
+                "like",
+                "don't",
+                "because",
+                "what",
+                "who",
+                "when",
+                "where",
+                "good",
+                "bad",
+                "happy",
+                "sad",
+            ],
+            DevelopmentalStage.ADOLESCENT: [
+                "think",
+                "feel",
+                "believe",
+                "understand",
+                "sometimes",
+                "never",
+                "always",
+                "maybe",
+                "probably",
+                "interesting",
+                "boring",
+            ],
+            DevelopmentalStage.MATURE: [
+                "however",
+                "therefore",
+                "although",
+                "nevertheless",
+                "furthermore",
+                "consider",
+                "hypothetical",
+                "perspective",
+            ],
         }
 
         # Add words for current and all previous stages
@@ -965,7 +1165,9 @@ class LanguageNetwork(NeuralNetwork):
                 for word in words_to_add:
                     if word not in self.vocabulary:
                         # Create embedding
-                        embedding = list(np.random.uniform(-1, 1, self.vocabulary_embedding_dim))
+                        embedding = list(
+                            np.random.uniform(-1, 1, self.vocabulary_embedding_dim)
+                        )
 
                         # Determine part of speech
                         part_of_speech = None
@@ -996,7 +1198,7 @@ class LanguageNetwork(NeuralNetwork):
 
     def generate_text_output(self) -> TextOutput:
         """Generate a human-readable text output from the neural network.
-        
+
         Returns:
             Text representation of the network's current state
 
@@ -1047,7 +1249,7 @@ class LanguageNetwork(NeuralNetwork):
 
     def learn_from_interaction(self, input_text: str, response_text: str) -> None:
         """Learn from an interaction between input and output text.
-        
+
         Args:
             input_text: Input text received
             response_text: Response text generated
@@ -1065,11 +1267,14 @@ class LanguageNetwork(NeuralNetwork):
             if len(input_words) >= 2 and len(response_words) >= 2:
                 # Very simple pattern recognition - look for word order patterns
                 for i in range(len(input_words) - 1):
-                    word_pair = (input_words[i], input_words[i+1])
+                    word_pair = (input_words[i], input_words[i + 1])
 
                     # Check if this pair appears in response
                     for j in range(len(response_words) - 1):
-                        if response_words[j] == word_pair[0] and response_words[j+1] == word_pair[1]:
+                        if (
+                            response_words[j] == word_pair[0]
+                            and response_words[j + 1] == word_pair[1]
+                        ):
                             # Pattern found - reinforce it
                             for word in word_pair:
                                 if word in self.vocabulary:
@@ -1077,24 +1282,37 @@ class LanguageNetwork(NeuralNetwork):
 
                             # If words have part of speech, try to identify a syntactic pattern
                             if all(word in self.vocabulary for word in word_pair):
-                                pos = [self.vocabulary[word].part_of_speech for word in word_pair]
+                                pos = [
+                                    self.vocabulary[word].part_of_speech
+                                    for word in word_pair
+                                ]
                                 if all(pos):
                                     pattern_key = f"{pos[0]}_{pos[1]}"
 
                                     # Check if we have a rule for this pattern
                                     found_rule = False
                                     for rule in self.syntax_rules.values():
-                                        if len(rule.pattern) == 2 and rule.pattern[0] == pos[0] and rule.pattern[1] == pos[1]:
+                                        if (
+                                            len(rule.pattern) == 2
+                                            and rule.pattern[0] == pos[0]
+                                            and rule.pattern[1] == pos[1]
+                                        ):
                                             rule.increase_mastery(0.05)
                                             if len(rule.examples) < 5:
-                                                example = f"{word_pair[0]} {word_pair[1]}"
+                                                example = (
+                                                    f"{word_pair[0]} {word_pair[1]}"
+                                                )
                                                 if example not in rule.examples:
                                                     rule.examples.append(example)
                                             found_rule = True
                                             break
 
                                     # Create a new rule if pattern not found and advanced enough
-                                    if not found_rule and self.developmental_stage.value >= DevelopmentalStage.CHILD.value:
+                                    if (
+                                        not found_rule
+                                        and self.developmental_stage.value
+                                        >= DevelopmentalStage.CHILD.value
+                                    ):
                                         rule_id = f"learned_{pattern_key}_{len(self.syntax_rules)}"
                                         self.syntax_rules[rule_id] = SyntaxRule(
                                             rule_id=rule_id,
@@ -1107,26 +1325,34 @@ class LanguageNetwork(NeuralNetwork):
 
         # Increase understanding level slightly from this interaction
         understanding_gain = 0.001 * self.developmental_stage.value
-        self.language_ability.understanding_level = min(1.0, self.language_ability.understanding_level + understanding_gain)
+        self.language_ability.understanding_level = min(
+            1.0, self.language_ability.understanding_level + understanding_gain
+        )
 
         # Increase expression level if we generated a response
         if response_text:
             expression_gain = 0.001 * self.developmental_stage.value
-            self.language_ability.expression_level = min(1.0, self.language_ability.expression_level + expression_gain)
+            self.language_ability.expression_level = min(
+                1.0, self.language_ability.expression_level + expression_gain
+            )
 
         # Update state
-        self.update_state({
-            "understanding_level": self.language_ability.understanding_level,
-            "expression_level": self.language_ability.expression_level,
-        })
+        self.update_state(
+            {
+                "understanding_level": self.language_ability.understanding_level,
+                "expression_level": self.language_ability.expression_level,
+            }
+        )
 
-    def clone_with_growth(self, growth_factor: float = 1.2, min_dim: int = 8) -> "LanguageNetwork":
+    def clone_with_growth(
+        self, growth_factor: float = 1.2, min_dim: int = 8
+    ) -> "LanguageNetwork":
         """Create a larger clone of this network with scaled dimensions.
-        
+
         Args:
             growth_factor: Factor to scale dimensions by
             min_dim: Minimum dimension size to ensure
-            
+
         Returns:
             Larger clone of this network with scaled dimensions
 
@@ -1145,7 +1371,9 @@ class LanguageNetwork(NeuralNetwork):
 
         # Transfer language properties
         new_network.vocabulary = copy.deepcopy(self.vocabulary)
-        new_network.vocabulary_embedding_dim = int(self.vocabulary_embedding_dim * growth_factor)
+        new_network.vocabulary_embedding_dim = int(
+            self.vocabulary_embedding_dim * growth_factor
+        )
         new_network.syntax_rules = copy.deepcopy(self.syntax_rules)
         new_network.language_ability = copy.deepcopy(self.language_ability)
         new_network.recent_utterances = copy.deepcopy(self.recent_utterances)
@@ -1156,15 +1384,17 @@ class LanguageNetwork(NeuralNetwork):
 
         # Record growth event
         new_network.growth_history = copy.deepcopy(self.growth_history)
-        new_network.growth_history.append(NeuralGrowthRecord(
-            event_type="network_expansion",
-            layer_affected="all",
-            old_shape=[self.input_dim, self.lstm.hidden_size, self.output_dim],
-            new_shape=[new_input_dim, new_hidden_dim, new_output_dim],
-            growth_factor=growth_factor,
-            trigger="clone_with_growth",
-            developmental_stage=self.developmental_stage,
-        ))
+        new_network.growth_history.append(
+            NeuralGrowthRecord(
+                event_type="network_expansion",
+                layer_affected="all",
+                old_shape=[self.input_dim, self.lstm.hidden_size, self.output_dim],
+                new_shape=[new_input_dim, new_hidden_dim, new_output_dim],
+                growth_factor=growth_factor,
+                trigger="clone_with_growth",
+                developmental_stage=self.developmental_stage,
+            )
+        )
 
         # Reset hidden states
         new_network.hidden = None

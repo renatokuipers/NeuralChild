@@ -180,3 +180,6 @@ cython_debug/
 # so it is machine-specific. Config.from_yaml falls back to config.py defaults
 # when this file is absent.
 config.yaml
+
+# Generated analysis reports (workspace-audit)
+logs/

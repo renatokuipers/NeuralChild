@@ -7,7 +7,7 @@ perceptual representations as development progresses.
 import logging
 import random
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Any
 
 import torch
 from torch import nn
@@ -18,17 +18,20 @@ from core.schemas import DevelopmentalStage, NetworkMessage, TextOutput, VectorO
 # Configure logging
 logger = logging.getLogger(__name__)
 
+
 class PerceptionNetwork(NeuralNetwork):
     """Perception network that processes sensory inputs.
-    
+
     This network handles visual, auditory, and other sensory inputs,
     building increasingly complex perceptual representations as the
     mind develops through different stages.
     """
 
-    def __init__(self, input_dim: int = 128, hidden_dim: int = 256, output_dim: int = 64):
+    def __init__(
+        self, input_dim: int = 128, hidden_dim: int = 256, output_dim: int = 64
+    ):
         """Initialize the perception network.
-        
+
         Args:
             input_dim: Dimension of input vectors
             hidden_dim: Dimension of hidden layers
@@ -64,7 +67,9 @@ class PerceptionNetwork(NeuralNetwork):
         )
 
         # Attention mechanism (develops with maturity)
-        self.attention = nn.Linear(hidden_dim // 2, 2)  # Attention weights for visual and auditory
+        self.attention = nn.Linear(
+            hidden_dim // 2, 2
+        )  # Attention weights for visual and auditory
 
         # Object recognition capacity (develops with stage)
         self.object_recognition = 0.2  # Starts basic, improves with development
@@ -79,19 +84,21 @@ class PerceptionNetwork(NeuralNetwork):
         self.attentional_focus = "visual"  # Default focus
 
         # Initialize state parameters
-        self.update_state({
-            "object_recognition": self.object_recognition,
-            "pattern_recognition": self.pattern_recognition,
-            "attentional_focus": self.attentional_focus,
-            "recent_perceptions": [],
-        })
+        self.update_state(
+            {
+                "object_recognition": self.object_recognition,
+                "pattern_recognition": self.pattern_recognition,
+                "attentional_focus": self.attentional_focus,
+                "recent_perceptions": [],
+            }
+        )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Forward pass of the neural network.
-        
+
         Args:
             x: Input tensor representing sensory input
-            
+
         Returns:
             Output tensor representing processed perception
 
@@ -102,8 +109,8 @@ class PerceptionNetwork(NeuralNetwork):
         batch_size = x.size(0)
 
         # Split input into visual and auditory components
-        visual_input = x[:, :self.input_dim // 2]
-        auditory_input = x[:, self.input_dim // 2:]
+        visual_input = x[:, : self.input_dim // 2]
+        auditory_input = x[:, self.input_dim // 2 :]
 
         # Process each sensory modality
         visual_features = self.visual_processor(visual_input)
@@ -124,7 +131,9 @@ class PerceptionNetwork(NeuralNetwork):
             # Update attentional focus based on weights
             with torch.no_grad():
                 avg_weights = attention_weights.mean(dim=0)
-                self.attentional_focus = "visual" if avg_weights[0] > avg_weights[1] else "auditory"
+                self.attentional_focus = (
+                    "visual" if avg_weights[0] > avg_weights[1] else "auditory"
+                )
 
         # Integrate features
         output = self.integration_network(combined_features)
@@ -137,12 +146,12 @@ class PerceptionNetwork(NeuralNetwork):
 
         return output
 
-    def process_message(self, message: NetworkMessage) -> Optional[VectorOutput]:
+    def process_message(self, message: NetworkMessage) -> VectorOutput | None:
         """Process a message from another neural network.
-        
+
         Args:
             message: Message from another network
-            
+
         Returns:
             Optional vector output as response
 
@@ -159,14 +168,18 @@ class PerceptionNetwork(NeuralNetwork):
 
                 # Ensure they're the right size
                 if len(visual_data) > self.input_dim // 2:
-                    visual_data = visual_data[:self.input_dim // 2]
+                    visual_data = visual_data[: self.input_dim // 2]
                 elif len(visual_data) < self.input_dim // 2:
-                    visual_data = visual_data + [0.0] * (self.input_dim // 2 - len(visual_data))
+                    visual_data = visual_data + [0.0] * (
+                        self.input_dim // 2 - len(visual_data)
+                    )
 
                 if len(auditory_data) > self.input_dim // 2:
-                    auditory_data = auditory_data[:self.input_dim // 2]
+                    auditory_data = auditory_data[: self.input_dim // 2]
                 elif len(auditory_data) < self.input_dim // 2:
-                    auditory_data = auditory_data + [0.0] * (self.input_dim // 2 - len(auditory_data))
+                    auditory_data = auditory_data + [0.0] * (
+                        self.input_dim // 2 - len(auditory_data)
+                    )
 
                 # Combine data
                 sensory_data = visual_data + auditory_data
@@ -177,9 +190,11 @@ class PerceptionNetwork(NeuralNetwork):
 
                 # Ensure right size
                 if len(visual_data) > self.input_dim // 2:
-                    visual_data = visual_data[:self.input_dim // 2]
+                    visual_data = visual_data[: self.input_dim // 2]
                 elif len(visual_data) < self.input_dim // 2:
-                    visual_data = visual_data + [0.0] * (self.input_dim // 2 - len(visual_data))
+                    visual_data = visual_data + [0.0] * (
+                        self.input_dim // 2 - len(visual_data)
+                    )
 
                 # Create empty auditory data
                 auditory_data = [0.0] * (self.input_dim // 2)
@@ -193,9 +208,11 @@ class PerceptionNetwork(NeuralNetwork):
 
                 # Ensure right size
                 if len(auditory_data) > self.input_dim // 2:
-                    auditory_data = auditory_data[:self.input_dim // 2]
+                    auditory_data = auditory_data[: self.input_dim // 2]
                 elif len(auditory_data) < self.input_dim // 2:
-                    auditory_data = auditory_data + [0.0] * (self.input_dim // 2 - len(auditory_data))
+                    auditory_data = auditory_data + [0.0] * (
+                        self.input_dim // 2 - len(auditory_data)
+                    )
 
                 # Create empty visual data
                 visual_data = [0.0] * (self.input_dim // 2)
@@ -211,7 +228,9 @@ class PerceptionNetwork(NeuralNetwork):
                     output_tensor = self.forward(input_tensor.unsqueeze(0))
 
                 # Extract perceptual information
-                perception_info = self._extract_perception(output_tensor[0], message.content)
+                perception_info = self._extract_perception(
+                    output_tensor[0], message.content
+                )
 
                 # Remember this perception
                 self._remember_perception(perception_info)
@@ -223,7 +242,9 @@ class PerceptionNetwork(NeuralNetwork):
                         receiver="emotions",
                         message_type="perception",
                         content={
-                            "stimulus": perception_info.get("description", "sensory input"),
+                            "stimulus": perception_info.get(
+                                "description", "sensory input"
+                            ),
                             "valence": perception_info["emotional_valence"],
                             "intensity": perception_info.get("salience", 0.5),
                         },
@@ -231,9 +252,14 @@ class PerceptionNetwork(NeuralNetwork):
                     )
 
                     # Add to state for the mind to retrieve
-                    self.update_state({
-                        "pending_messages": self.state.parameters.get("pending_messages", []) + [emotion_message.to_dict()],
-                    })
+                    self.update_state(
+                        {
+                            "pending_messages": self.state.parameters.get(
+                                "pending_messages", []
+                            )
+                            + [emotion_message.to_dict()],
+                        }
+                    )
 
                 # Return processed perception
                 return VectorOutput(
@@ -251,19 +277,21 @@ class PerceptionNetwork(NeuralNetwork):
 
                     return VectorOutput(
                         source=self.name,
-                        data=[float(focus == "visual")] * (self.output_dim // 2) +
-                             [float(focus == "auditory")] * (self.output_dim // 2),
+                        data=[float(focus == "visual")] * (self.output_dim // 2)
+                        + [float(focus == "auditory")] * (self.output_dim // 2),
                     )
 
         return None
 
-    def _extract_perception(self, output: torch.Tensor, content: Dict[str, Any]) -> Dict[str, Any]:
+    def _extract_perception(
+        self, output: torch.Tensor, content: dict[str, Any]
+    ) -> dict[str, Any]:
         """Extract meaningful perception from network output.
-        
+
         Args:
             output: Raw network output tensor
             content: Original content that generated the perception
-            
+
         Returns:
             Dictionary of perception information
 
@@ -289,10 +317,14 @@ class PerceptionNetwork(NeuralNetwork):
 
         # Add raw sensory content summaries
         if "visual" in content:
-            perception["visual_content"] = content.get("visual_description", "visual input")
+            perception["visual_content"] = content.get(
+                "visual_description", "visual input"
+            )
 
         if "auditory" in content:
-            perception["auditory_content"] = content.get("auditory_description", "auditory input")
+            perception["auditory_content"] = content.get(
+                "auditory_description", "auditory input"
+            )
 
         # Generate description based on developmental stage
         description = None
@@ -331,9 +363,9 @@ class PerceptionNetwork(NeuralNetwork):
 
         return perception
 
-    def _remember_perception(self, perception: Dict[str, Any]) -> None:
+    def _remember_perception(self, perception: dict[str, Any]) -> None:
         """Remember a perception.
-        
+
         Args:
             perception: Perception information to remember
 
@@ -347,13 +379,15 @@ class PerceptionNetwork(NeuralNetwork):
             self.recent_perceptions = self.recent_perceptions[-max_memory:]
 
         # Update state
-        self.update_state({
-            "recent_perceptions": self.recent_perceptions,
-        })
+        self.update_state(
+            {
+                "recent_perceptions": self.recent_perceptions,
+            }
+        )
 
     def autonomous_step(self) -> None:
         """Autonomous processing step.
-        
+
         This function is called periodically by the mind to allow
         the network to perform autonomous processing.
         """
@@ -376,16 +410,21 @@ class PerceptionNetwork(NeuralNetwork):
                 )
 
                 # Add to state for the mind to retrieve
-                self.update_state({
-                    "pending_messages": self.state.parameters.get("pending_messages", []) + [pattern_message.to_dict()],
-                })
+                self.update_state(
+                    {
+                        "pending_messages": self.state.parameters.get(
+                            "pending_messages", []
+                        )
+                        + [pattern_message.to_dict()],
+                    }
+                )
 
     def update_developmental_stage(self, stage: DevelopmentalStage) -> None:
         """Update the developmental stage of the network.
-        
+
         As the network develops, object and pattern recognition improve,
         simulating the development of perceptual capabilities.
-        
+
         Args:
             stage: New developmental stage
 
@@ -420,14 +459,16 @@ class PerceptionNetwork(NeuralNetwork):
             self.object_recognition = stage_values[stage]["object_recognition"]
             self.pattern_recognition = stage_values[stage]["pattern_recognition"]
 
-            self.update_state({
-                "object_recognition": self.object_recognition,
-                "pattern_recognition": self.pattern_recognition,
-            })
+            self.update_state(
+                {
+                    "object_recognition": self.object_recognition,
+                    "pattern_recognition": self.pattern_recognition,
+                }
+            )
 
     def generate_text_output(self) -> TextOutput:
         """Generate a human-readable text output from the neural network.
-        
+
         Returns:
             Text representation of the network's current state
 
@@ -472,20 +513,24 @@ class PerceptionNetwork(NeuralNetwork):
             confidence=confidence,
         )
 
-    def clone_with_growth(self, growth_factor: float = 1.2, min_dim: int = 8) -> "PerceptionNetwork":
+    def clone_with_growth(
+        self, growth_factor: float = 1.2, min_dim: int = 8
+    ) -> "PerceptionNetwork":
         """Create a larger clone of this network with scaled dimensions.
-        
+
         Args:
             growth_factor: Factor to scale dimensions by
             min_dim: Minimum dimension size to ensure
-            
+
         Returns:
             Larger clone of this network with scaled dimensions
 
         """
         # Calculate new dimensions
         new_input_dim = max(min_dim, int(self.input_dim * growth_factor))
-        new_hidden_dim = max(min_dim * 2, int(self.visual_processor[1].out_features * 2 * growth_factor))
+        new_hidden_dim = max(
+            min_dim * 2, int(self.visual_processor[1].out_features * 2 * growth_factor)
+        )
         new_output_dim = max(min_dim, int(self.output_dim * growth_factor))
 
         # Create new network with expanded dimensions
@@ -507,15 +552,21 @@ class PerceptionNetwork(NeuralNetwork):
 
         # Record growth event
         new_network.growth_history = copy.deepcopy(self.growth_history)
-        new_network.growth_history.append(NeuralGrowthRecord(
-            event_type="network_expansion",
-            layer_affected="all_processors",
-            old_shape=[self.input_dim, self.visual_processor[1].out_features * 2, self.output_dim],
-            new_shape=[new_input_dim, new_hidden_dim, new_output_dim],
-            growth_factor=growth_factor,
-            trigger="clone_with_growth",
-            developmental_stage=self.developmental_stage,
-        ))
+        new_network.growth_history.append(
+            NeuralGrowthRecord(
+                event_type="network_expansion",
+                layer_affected="all_processors",
+                old_shape=[
+                    self.input_dim,
+                    self.visual_processor[1].out_features * 2,
+                    self.output_dim,
+                ],
+                new_shape=[new_input_dim, new_hidden_dim, new_output_dim],
+                growth_factor=growth_factor,
+                trigger="clone_with_growth",
+                developmental_stage=self.developmental_stage,
+            )
+        )
 
         logger.info(
             f"PerceptionNetwork cloned with growth factor {growth_factor}: "

@@ -6,7 +6,7 @@ This network processes emotional states and responses based on interactions and 
 import logging
 import random
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import torch
 from torch import nn
@@ -18,9 +18,10 @@ from mind.schemas import EmotionType
 # Configure logging
 logger = logging.getLogger(__name__)
 
+
 class EmotionsNetwork(NeuralNetwork):
     """Emotions network that processes and generates emotional responses.
-    
+
     This network maintains the emotional state of the mind and responds
     to external stimuli with appropriate emotional reactions that evolve
     with developmental stage.
@@ -28,7 +29,7 @@ class EmotionsNetwork(NeuralNetwork):
 
     def __init__(self, input_dim: int = 32, hidden_dim: int = 64, output_dim: int = 32):
         """Initialize the emotions network.
-        
+
         Args:
             input_dim: Dimension of input vectors
             hidden_dim: Dimension of hidden layers
@@ -57,7 +58,7 @@ class EmotionsNetwork(NeuralNetwork):
         }
 
         # Emotional memory - stores recent emotional events
-        self.emotional_memory: List[Dict[str, Any]] = []
+        self.emotional_memory: list[dict[str, Any]] = []
 
         # Emotional reactivity (decreases with development/maturity)
         self.reactivity = 0.8
@@ -66,18 +67,22 @@ class EmotionsNetwork(NeuralNetwork):
         self.regulation = 0.2
 
         # Initialize state parameters
-        self.update_state({
-            "emotional_state": {k.value: v for k, v in self.emotional_state.items()},
-            "reactivity": self.reactivity,
-            "regulation": self.regulation,
-        })
+        self.update_state(
+            {
+                "emotional_state": {
+                    k.value: v for k, v in self.emotional_state.items()
+                },
+                "reactivity": self.reactivity,
+                "regulation": self.regulation,
+            }
+        )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Forward pass of the neural network.
-        
+
         Args:
             x: Input tensor representing emotional stimulus
-            
+
         Returns:
             Output tensor representing emotional response
 
@@ -90,16 +95,18 @@ class EmotionsNetwork(NeuralNetwork):
         if self.regulation > 0.5:
             # Apply dampening to extreme values when regulation is higher
             dampening = torch.abs(effective_output - 0.5) * (self.regulation - 0.5) * 2
-            effective_output = effective_output - (dampening * torch.sign(effective_output - 0.5))
+            effective_output = effective_output - (
+                dampening * torch.sign(effective_output - 0.5)
+            )
 
         return effective_output
 
-    def process_message(self, message: NetworkMessage) -> Optional[VectorOutput]:
+    def process_message(self, message: NetworkMessage) -> VectorOutput | None:
         """Process a message from another neural network.
-        
+
         Args:
             message: Message from another network
-            
+
         Returns:
             Optional vector output as response
 
@@ -151,9 +158,11 @@ class EmotionsNetwork(NeuralNetwork):
 
         return None
 
-    def _update_emotional_state(self, stimulus: str, valence: float, intensity: float, response: torch.Tensor) -> None:
+    def _update_emotional_state(
+        self, stimulus: str, valence: float, intensity: float, response: torch.Tensor
+    ) -> None:
         """Update the emotional state based on a processed stimulus.
-        
+
         Args:
             stimulus: Description of the emotional stimulus
             valence: Emotional valence (-1 to 1)
@@ -165,7 +174,9 @@ class EmotionsNetwork(NeuralNetwork):
         if valence > 0.3:
             # Positive emotions
             self._update_emotion(EmotionType.JOY, response.mean().item() * intensity)
-            self._update_emotion(EmotionType.TRUST, response.mean().item() * intensity * 0.7)
+            self._update_emotion(
+                EmotionType.TRUST, response.mean().item() * intensity * 0.7
+            )
 
             # Decrease negative emotions
             self._update_emotion(EmotionType.SADNESS, -0.1 * intensity)
@@ -177,31 +188,47 @@ class EmotionsNetwork(NeuralNetwork):
             if valence < -0.7:
                 # Very negative - anger or fear
                 if random.random() < 0.5:
-                    self._update_emotion(EmotionType.ANGER, response.mean().item() * intensity)
+                    self._update_emotion(
+                        EmotionType.ANGER, response.mean().item() * intensity
+                    )
                 else:
-                    self._update_emotion(EmotionType.FEAR, response.mean().item() * intensity)
+                    self._update_emotion(
+                        EmotionType.FEAR, response.mean().item() * intensity
+                    )
             else:
                 # Moderately negative - sadness
-                self._update_emotion(EmotionType.SADNESS, response.mean().item() * intensity)
+                self._update_emotion(
+                    EmotionType.SADNESS, response.mean().item() * intensity
+                )
 
             # Decrease positive emotions
             self._update_emotion(EmotionType.JOY, -0.1 * intensity)
 
         else:
             # Neutral valence - surprise or interest
-            self._update_emotion(EmotionType.SURPRISE, response.mean().item() * intensity * 0.5)
+            self._update_emotion(
+                EmotionType.SURPRISE, response.mean().item() * intensity * 0.5
+            )
 
             # More complex emotions become available at higher developmental stages
             if self.developmental_stage.value >= DevelopmentalStage.TODDLER.value:
-                self._update_emotion(EmotionType.INTEREST, response.mean().item() * intensity * 0.3)
+                self._update_emotion(
+                    EmotionType.INTEREST, response.mean().item() * intensity * 0.3
+                )
 
             if self.developmental_stage.value >= DevelopmentalStage.CHILD.value:
-                self._update_emotion(EmotionType.ANTICIPATION, response.mean().item() * intensity * 0.2)
+                self._update_emotion(
+                    EmotionType.ANTICIPATION, response.mean().item() * intensity * 0.2
+                )
 
         # Update state parameters
-        self.update_state({
-            "emotional_state": {k.value: v for k, v in self.emotional_state.items()},
-        })
+        self.update_state(
+            {
+                "emotional_state": {
+                    k.value: v for k, v in self.emotional_state.items()
+                },
+            }
+        )
 
         # Send an emotion update message to the mind
         emotion_update = NetworkMessage(
@@ -209,7 +236,9 @@ class EmotionsNetwork(NeuralNetwork):
             receiver="mind",
             message_type="emotion",
             content={
-                "emotions": {k.value: v for k, v in self.emotional_state.items() if v > 0.2},
+                "emotions": {
+                    k.value: v for k, v in self.emotional_state.items() if v > 0.2
+                },
                 "stimulus": stimulus,
                 "valence": valence,
                 "intensity": intensity,
@@ -219,13 +248,16 @@ class EmotionsNetwork(NeuralNetwork):
 
         # This would be sent to the mind, but since we don't have direct access,
         # we'll add it to the state for the mind to retrieve
-        self.update_state({
-            "pending_messages": self.state.parameters.get("pending_messages", []) + [emotion_update.to_dict()],
-        })
+        self.update_state(
+            {
+                "pending_messages": self.state.parameters.get("pending_messages", [])
+                + [emotion_update.to_dict()],
+            }
+        )
 
     def _update_emotion(self, emotion: EmotionType, change: float) -> None:
         """Update a specific emotion intensity.
-        
+
         Args:
             emotion: The emotion to update
             change: Amount to change the emotion intensity
@@ -241,9 +273,11 @@ class EmotionsNetwork(NeuralNetwork):
         new_value = max(0.0, min(1.0, current + effective_change))
         self.emotional_state[emotion] = new_value
 
-    def _remember_emotional_event(self, stimulus: str, valence: float, intensity: float) -> None:
+    def _remember_emotional_event(
+        self, stimulus: str, valence: float, intensity: float
+    ) -> None:
         """Remember an emotional event.
-        
+
         Args:
             stimulus: Description of the emotional stimulus
             valence: Emotional valence (-1 to 1)
@@ -256,7 +290,9 @@ class EmotionsNetwork(NeuralNetwork):
             "stimulus": stimulus,
             "valence": valence,
             "intensity": intensity,
-            "emotional_state": {k.value: v for k, v in self.emotional_state.items() if v > 0.1},
+            "emotional_state": {
+                k.value: v for k, v in self.emotional_state.items() if v > 0.1
+            },
         }
 
         # Add to memory
@@ -268,13 +304,15 @@ class EmotionsNetwork(NeuralNetwork):
             self.emotional_memory = self.emotional_memory[-max_memory:]
 
         # Update state
-        self.update_state({
-            "emotional_memory": self.emotional_memory,
-        })
+        self.update_state(
+            {
+                "emotional_memory": self.emotional_memory,
+            }
+        )
 
     def autonomous_step(self) -> None:
         """Autonomous processing step.
-        
+
         This function is called periodically by the mind to allow
         the network to perform autonomous processing.
         """
@@ -299,16 +337,20 @@ class EmotionsNetwork(NeuralNetwork):
                     del self.emotional_state[emotion]
 
         # Update state parameters
-        self.update_state({
-            "emotional_state": {k.value: v for k, v in self.emotional_state.items()},
-        })
+        self.update_state(
+            {
+                "emotional_state": {
+                    k.value: v for k, v in self.emotional_state.items()
+                },
+            }
+        )
 
     def update_developmental_stage(self, stage: DevelopmentalStage) -> None:
         """Update the developmental stage of the network.
-        
+
         As the network develops, emotional regulation increases and
         reactivity decreases, simulating emotional maturation.
-        
+
         Args:
             stage: New developmental stage
 
@@ -328,10 +370,12 @@ class EmotionsNetwork(NeuralNetwork):
             self.reactivity = stage_values[stage]["reactivity"]
             self.regulation = stage_values[stage]["regulation"]
 
-            self.update_state({
-                "reactivity": self.reactivity,
-                "regulation": self.regulation,
-            })
+            self.update_state(
+                {
+                    "reactivity": self.reactivity,
+                    "regulation": self.regulation,
+                }
+            )
 
         # Unlock more complex emotions at higher developmental stages
         if stage == DevelopmentalStage.TODDLER:
@@ -355,13 +399,15 @@ class EmotionsNetwork(NeuralNetwork):
 
     def generate_text_output(self) -> TextOutput:
         """Generate a human-readable text output from the neural network.
-        
+
         Returns:
             Text representation of the network's current state
 
         """
         # Get significant emotions (intensity > 0.3)
-        significant_emotions = {k: v for k, v in self.emotional_state.items() if v > 0.3}
+        significant_emotions = {
+            k: v for k, v in self.emotional_state.items() if v > 0.3
+        }
 
         if not significant_emotions:
             return TextOutput(
@@ -410,20 +456,24 @@ class EmotionsNetwork(NeuralNetwork):
             confidence=max(0.5, min(sorted_emotions, key=lambda x: x[1])[1]),
         )
 
-    def clone_with_growth(self, growth_factor: float = 1.2, min_dim: int = 8) -> "EmotionsNetwork":
+    def clone_with_growth(
+        self, growth_factor: float = 1.2, min_dim: int = 8
+    ) -> "EmotionsNetwork":
         """Create a larger clone of this network with scaled dimensions.
-        
+
         Args:
             growth_factor: Factor to scale dimensions by
             min_dim: Minimum dimension size to ensure
-            
+
         Returns:
             Larger clone of this network with scaled dimensions
 
         """
         # Calculate new dimensions
         new_input_dim = max(min_dim, int(self.input_dim * growth_factor))
-        new_hidden_dim = max(min_dim * 2, int(self.emotion_processor[1].out_features * growth_factor))
+        new_hidden_dim = max(
+            min_dim * 2, int(self.emotion_processor[1].out_features * growth_factor)
+        )
         new_output_dim = max(min_dim, int(self.output_dim * growth_factor))
 
         # Create new network with expanded dimensions
@@ -445,15 +495,21 @@ class EmotionsNetwork(NeuralNetwork):
 
         # Record growth event
         new_network.growth_history = copy.deepcopy(self.growth_history)
-        new_network.growth_history.append(NeuralGrowthRecord(
-            event_type="network_expansion",
-            layer_affected="emotion_processor",
-            old_shape=[self.input_dim, self.emotion_processor[1].out_features, self.output_dim],
-            new_shape=[new_input_dim, new_hidden_dim, new_output_dim],
-            growth_factor=growth_factor,
-            trigger="clone_with_growth",
-            developmental_stage=self.developmental_stage,
-        ))
+        new_network.growth_history.append(
+            NeuralGrowthRecord(
+                event_type="network_expansion",
+                layer_affected="emotion_processor",
+                old_shape=[
+                    self.input_dim,
+                    self.emotion_processor[1].out_features,
+                    self.output_dim,
+                ],
+                new_shape=[new_input_dim, new_hidden_dim, new_output_dim],
+                growth_factor=growth_factor,
+                trigger="clone_with_growth",
+                developmental_stage=self.developmental_stage,
+            )
+        )
 
         logger.info(
             f"EmotionsNetwork cloned with growth factor {growth_factor}: "

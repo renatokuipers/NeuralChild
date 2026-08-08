@@ -9,7 +9,7 @@ import logging
 import os
 from abc import ABC, abstractmethod
 from datetime import datetime
-from typing import Any, Dict, List, Literal, Optional, Tuple
+from typing import Any, Literal
 
 import numpy as np
 import torch
@@ -27,17 +27,43 @@ from core.schemas import (
 # Configure logging
 logger = logging.getLogger(__name__)
 
+
 class GrowthMetrics(BaseModel):
     """Metrics tracking the growth and development of a neural network."""
 
-    connection_density: float = Field(default=0.1, ge=0.0, le=1.0, description="Density of connections in the network")
-    plasticity: float = Field(default=0.5, ge=0.0, le=1.0, description="Ability to form new connections")
-    pruning_rate: float = Field(default=0.1, ge=0.0, le=1.0, description="Rate at which unused connections are removed")
-    specialization: float = Field(default=0.1, ge=0.0, le=1.0, description="Degree of functional specialization")
-    integration: float = Field(default=0.1, ge=0.0, le=1.0, description="Degree of integration with other networks")
-    adaptability: float = Field(default=0.5, ge=0.0, le=1.0, description="Ability to adapt to new inputs")
+    connection_density: float = Field(
+        default=0.1, ge=0.0, le=1.0, description="Density of connections in the network"
+    )
+    plasticity: float = Field(
+        default=0.5, ge=0.0, le=1.0, description="Ability to form new connections"
+    )
+    pruning_rate: float = Field(
+        default=0.1,
+        ge=0.0,
+        le=1.0,
+        description="Rate at which unused connections are removed",
+    )
+    specialization: float = Field(
+        default=0.1, ge=0.0, le=1.0, description="Degree of functional specialization"
+    )
+    integration: float = Field(
+        default=0.1,
+        ge=0.0,
+        le=1.0,
+        description="Degree of integration with other networks",
+    )
+    adaptability: float = Field(
+        default=0.5, ge=0.0, le=1.0, description="Ability to adapt to new inputs"
+    )
 
-    @validator("connection_density", "plasticity", "pruning_rate", "specialization", "integration", "adaptability")
+    @validator(
+        "connection_density",
+        "plasticity",
+        "pruning_rate",
+        "specialization",
+        "integration",
+        "adaptability",
+    )
     def check_range(cls, v, values, **kwargs):
         """Ensure values are within range."""
         field_name = kwargs["field"].name
@@ -47,7 +73,7 @@ class GrowthMetrics(BaseModel):
 
     def update_for_developmental_stage(self, stage: DevelopmentalStage) -> None:
         """Update growth metrics based on developmental stage.
-        
+
         Args:
             stage: Current developmental stage
 
@@ -101,7 +127,7 @@ class GrowthMetrics(BaseModel):
         for key, value in metrics.items():
             setattr(self, key, value)
 
-    def to_dict(self) -> Dict[str, float]:
+    def to_dict(self) -> dict[str, float]:
         """Convert to dictionary."""
         return {
             "connection_density": self.connection_density,
@@ -112,19 +138,30 @@ class GrowthMetrics(BaseModel):
             "adaptability": self.adaptability,
         }
 
+
 class NeuralGrowthRecord(BaseModel):
     """Record of neural network growth events."""
 
     timestamp: datetime = Field(default_factory=datetime.now)
-    event_type: str = Field(..., description="Type of growth event (expand, prune, etc.)")
+    event_type: str = Field(
+        ..., description="Type of growth event (expand, prune, etc.)"
+    )
     layer_affected: str = Field(..., description="Name or identifier of affected layer")
-    old_shape: Optional[List[int]] = Field(default=None, description="Previous shape of layer")
-    new_shape: Optional[List[int]] = Field(default=None, description="New shape of layer")
-    growth_factor: float = Field(default=1.0, description="Factor by which the layer grew or shrank")
-    trigger: str = Field(default="unknown", description="What triggered this growth event")
-    developmental_stage: DevelopmentalStage = Field(..., description="Developmental stage when event occurred")
+    old_shape: list[int] | None = Field(
+        default=None, description="Previous shape of layer"
+    )
+    new_shape: list[int] | None = Field(default=None, description="New shape of layer")
+    growth_factor: float = Field(
+        default=1.0, description="Factor by which the layer grew or shrank"
+    )
+    trigger: str = Field(
+        default="unknown", description="What triggered this growth event"
+    )
+    developmental_stage: DevelopmentalStage = Field(
+        ..., description="Developmental stage when event occurred"
+    )
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization."""
         return {
             "timestamp": self.timestamp.isoformat(),
@@ -137,16 +174,17 @@ class NeuralGrowthRecord(BaseModel):
             "developmental_stage": self.developmental_stage.name,
         }
 
+
 class NeuralNetwork(nn.Module, ABC):
     """Base class for all neural networks in the mind simulation.
-    
+
     This abstract base class provides core functionality for development-aware neural networks
     that can adapt and grow based on the developmental stage of the mind and experiences.
     """
 
     def __init__(self, name: str, input_dim: int, output_dim: int):
         """Initialize the neural network.
-        
+
         Args:
             name: Unique identifier for the network
             input_dim: Dimension of input vectors
@@ -168,10 +206,10 @@ class NeuralNetwork(nn.Module, ABC):
 
         # Growth and development metrics
         self.growth_metrics = GrowthMetrics()
-        self.growth_history: List[NeuralGrowthRecord] = []
+        self.growth_history: list[NeuralGrowthRecord] = []
 
         # Activity tracker for hebbian learning
-        self.activity_tracker: Dict[str, List[float]] = {}
+        self.activity_tracker: dict[str, list[float]] = {}
 
         # Parameters for dynamic growth
         self.growth_eligible = True
@@ -185,22 +223,22 @@ class NeuralNetwork(nn.Module, ABC):
     @abstractmethod
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Forward pass of the neural network.
-        
+
         Args:
             x: Input tensor
-            
+
         Returns:
             Output tensor
 
         """
 
     @abstractmethod
-    def process_message(self, message: NetworkMessage) -> Optional[VectorOutput]:
+    def process_message(self, message: NetworkMessage) -> VectorOutput | None:
         """Process a message from another neural network.
-        
+
         Args:
             message: Message from another network
-            
+
         Returns:
             Optional vector output as response
 
@@ -209,15 +247,15 @@ class NeuralNetwork(nn.Module, ABC):
     @abstractmethod
     def generate_text_output(self) -> TextOutput:
         """Generate a human-readable text output from the neural network.
-        
+
         Returns:
             Text representation of the network's current state
 
         """
 
-    def update_state(self, parameters: Dict[str, Any]) -> None:
+    def update_state(self, parameters: dict[str, Any]) -> None:
         """Update the state of the neural network.
-        
+
         Args:
             parameters: Dictionary of parameters to update
 
@@ -227,10 +265,10 @@ class NeuralNetwork(nn.Module, ABC):
 
     def update_developmental_stage(self, stage: DevelopmentalStage) -> None:
         """Update the developmental stage of the network.
-        
+
         This method adjusts internal weights, parameters, and growth metrics
         based on the new developmental stage.
-        
+
         Args:
             stage: New developmental stage
 
@@ -266,16 +304,18 @@ class NeuralNetwork(nn.Module, ABC):
         self.state.parameters["developmental_stage"] = stage.value
         self.state.parameters["growth_metrics"] = self.growth_metrics.to_dict()
 
-    def experiential_learning(self, input_data: torch.Tensor, target: Optional[torch.Tensor] = None) -> Tuple[torch.Tensor, float]:
+    def experiential_learning(
+        self, input_data: torch.Tensor, target: torch.Tensor | None = None
+    ) -> tuple[torch.Tensor, float]:
         """Learn from experience using the input data.
-        
+
         This method implements a form of experiential learning that becomes more
         effective as the network develops, tracking activations for layer growth.
-        
+
         Args:
             input_data: Input tensor to learn from
             target: Optional target tensor for supervised learning
-            
+
         Returns:
             Tuple of (output_tensor, loss_value)
 
@@ -297,7 +337,10 @@ class NeuralNetwork(nn.Module, ABC):
         loss = criterion.forward(output, target)
 
         # Scale learning by developmental stage and plasticity
-        effective_lr = self.learning_rate * self.state.developmental_weights[self.developmental_stage]
+        effective_lr = (
+            self.learning_rate
+            * self.state.developmental_weights[self.developmental_stage]
+        )
 
         # Backward pass and update weights - only if network is actively learning
         if self.training and effective_lr > 0:
@@ -323,7 +366,9 @@ class NeuralNetwork(nn.Module, ABC):
                         # Keep only recent history
                         max_history = 50
                         if len(self.activity_tracker[name]) > max_history:
-                            self.activity_tracker[name] = self.activity_tracker[name][-max_history:]
+                            self.activity_tracker[name] = self.activity_tracker[name][
+                                -max_history:
+                            ]
 
         # Track this experience
         self.experience_count += 1
@@ -332,26 +377,30 @@ class NeuralNetwork(nn.Module, ABC):
             self.last_activations = self.last_activations[-100:]
 
         # Check if ready for potential growth
-        if (self.growth_eligible and
-            self.experiences_since_last_growth >= self.min_experiences_before_growth):
+        if (
+            self.growth_eligible
+            and self.experiences_since_last_growth >= self.min_experiences_before_growth
+        ):
             self._check_for_network_growth("experiential_learning")
 
         # Update state with training information
-        self.update_state({
-            "experience_count": self.experience_count,
-            "last_loss": loss.item(),
-            "average_activation": np.mean(self.last_activations),
-            "growth_metrics": self.growth_metrics.to_dict(),
-        })
+        self.update_state(
+            {
+                "experience_count": self.experience_count,
+                "last_loss": loss.item(),
+                "average_activation": np.mean(self.last_activations),
+                "growth_metrics": self.growth_metrics.to_dict(),
+            }
+        )
 
         return output, loss.item()
 
     def _check_for_network_growth(self, trigger: str) -> bool:
         """Check if the network should grow based on recent activity.
-        
+
         Args:
             trigger: What triggered this growth check
-            
+
         Returns:
             True if growth occurred, False otherwise
 
@@ -392,7 +441,9 @@ class NeuralNetwork(nn.Module, ABC):
         # Apply the growth metrics to decide on actual growth
         if growth_candidates and random.random() < self.growth_metrics.plasticity:
             # Select a random candidate weighted by utilization
-            candidates = [(name, layer_utilizations[name]) for name in growth_candidates]
+            candidates = [
+                (name, layer_utilizations[name]) for name in growth_candidates
+            ]
             total_util = sum(util for _, util in candidates)
             r = random.random() * total_util
 
@@ -408,7 +459,11 @@ class NeuralNetwork(nn.Module, ABC):
             growth_occurred = self._grow_layer(selected_layer, trigger)
 
         # Apply pruning if appropriate (but not in the same step as growth)
-        if not growth_occurred and prune_candidates and random.random() < self.growth_metrics.pruning_rate:
+        if (
+            not growth_occurred
+            and prune_candidates
+            and random.random() < self.growth_metrics.pruning_rate
+        ):
             # Select a layer for pruning
             selected_layer = random.choice(prune_candidates)
 
@@ -419,27 +474,31 @@ class NeuralNetwork(nn.Module, ABC):
 
     def _grow_layer(self, layer_name: str, trigger: str) -> bool:
         """Grow a specific layer based on activity patterns.
-        
+
         Args:
             layer_name: Name of the layer to grow
             trigger: What triggered this growth
-            
+
         Returns:
             True if growth occurred, False otherwise
 
         """
         # This is a more complex operation that requires knowing the specific
         # layer types and structures. Default implementation will just log.
-        logger.info(f"Growth triggered for layer {layer_name} by {trigger} - Override in subclass")
+        logger.info(
+            f"Growth triggered for layer {layer_name} by {trigger} - Override in subclass"
+        )
 
         # Record the growth event
-        self.growth_history.append(NeuralGrowthRecord(
-            event_type="grow",
-            layer_affected=layer_name,
-            growth_factor=1.0,  # No actual growth in base implementation
-            trigger=trigger,
-            developmental_stage=self.developmental_stage,
-        ))
+        self.growth_history.append(
+            NeuralGrowthRecord(
+                event_type="grow",
+                layer_affected=layer_name,
+                growth_factor=1.0,  # No actual growth in base implementation
+                trigger=trigger,
+                developmental_stage=self.developmental_stage,
+            )
+        )
 
         # Reset growth counter
         self.experiences_since_last_growth = 0
@@ -448,26 +507,30 @@ class NeuralNetwork(nn.Module, ABC):
 
     def _prune_layer(self, layer_name: str, trigger: str) -> bool:
         """Prune a specific layer based on activity patterns.
-        
+
         Args:
             layer_name: Name of the layer to prune
             trigger: What triggered this pruning
-            
+
         Returns:
             True if pruning occurred, False otherwise
 
         """
         # Default implementation just logs
-        logger.info(f"Pruning triggered for layer {layer_name} by {trigger} - Override in subclass")
+        logger.info(
+            f"Pruning triggered for layer {layer_name} by {trigger} - Override in subclass"
+        )
 
         # Record the pruning event
-        self.growth_history.append(NeuralGrowthRecord(
-            event_type="prune",
-            layer_affected=layer_name,
-            growth_factor=1.0,  # No actual pruning in base implementation
-            trigger=trigger,
-            developmental_stage=self.developmental_stage,
-        ))
+        self.growth_history.append(
+            NeuralGrowthRecord(
+                event_type="prune",
+                layer_affected=layer_name,
+                growth_factor=1.0,  # No actual pruning in base implementation
+                trigger=trigger,
+                developmental_stage=self.developmental_stage,
+            )
+        )
 
         # Reset growth counter
         self.experiences_since_last_growth = 0
@@ -476,17 +539,19 @@ class NeuralNetwork(nn.Module, ABC):
 
     def _grow_network_for_new_stage(self, stage: DevelopmentalStage) -> None:
         """Grow the network when advancing to a new developmental stage.
-        
+
         Args:
             stage: New developmental stage
 
         """
         # Default implementation is a placeholder for subclasses
-        logger.info(f"Network {self.name} advancing to stage {stage.name} - Structure changes should be implemented in subclass")
+        logger.info(
+            f"Network {self.name} advancing to stage {stage.name} - Structure changes should be implemented in subclass"
+        )
 
-    def get_growth_history(self) -> List[Dict[str, Any]]:
+    def get_growth_history(self) -> list[dict[str, Any]]:
         """Get the history of network growth events.
-        
+
         Returns:
             List of growth events as dictionaries
 
@@ -495,20 +560,22 @@ class NeuralNetwork(nn.Module, ABC):
 
     def get_developmental_capacity(self) -> float:
         """Get the current developmental capacity of the network.
-        
+
         Returns:
             Float representing developmental capacity (0-1)
 
         """
         return self.state.developmental_weights[self.developmental_stage]
 
-    def save_model(self, path: str, format: Literal["pytorch", "torchscript", "onnx"] = "pytorch") -> bool:
+    def save_model(
+        self, path: str, format: Literal["pytorch", "torchscript", "onnx"] = "pytorch"
+    ) -> bool:
         """Save the neural network model to disk.
-        
+
         Args:
             path: Path to save the model
             format: Format to save the model in ("pytorch", "torchscript", "onnx")
-            
+
         Returns:
             True if saved successfully, False otherwise
 
@@ -530,10 +597,10 @@ class NeuralNetwork(nn.Module, ABC):
 
     def _save_pytorch(self, path: str) -> bool:
         """Save model in PyTorch format.
-        
+
         Args:
             path: Path to save the model
-            
+
         Returns:
             True if saved successfully
 
@@ -562,10 +629,10 @@ class NeuralNetwork(nn.Module, ABC):
 
     def _save_torchscript(self, path: str) -> bool:
         """Save model in TorchScript format.
-        
+
         Args:
             path: Path to save the model
-            
+
         Returns:
             True if saved successfully
 
@@ -582,16 +649,19 @@ class NeuralNetwork(nn.Module, ABC):
 
             # Save metadata separately
             metadata_path = path + ".metadata.pt"
-            torch.save({
-                "developmental_stage": self.developmental_stage.value,
-                "state_parameters": self.state.parameters,
-                "growth_metrics": self.growth_metrics.to_dict(),
-                "input_dim": self.input_dim,
-                "output_dim": self.output_dim,
-                "name": self.name,
-                "type": self.__class__.__name__,
-                "save_time": datetime.now().isoformat(),
-            }, metadata_path)
+            torch.save(
+                {
+                    "developmental_stage": self.developmental_stage.value,
+                    "state_parameters": self.state.parameters,
+                    "growth_metrics": self.growth_metrics.to_dict(),
+                    "input_dim": self.input_dim,
+                    "output_dim": self.output_dim,
+                    "name": self.name,
+                    "type": self.__class__.__name__,
+                    "save_time": datetime.now().isoformat(),
+                },
+                metadata_path,
+            )
 
             logger.info(f"Model saved in TorchScript format to {path}")
             return True
@@ -601,10 +671,10 @@ class NeuralNetwork(nn.Module, ABC):
 
     def _save_onnx(self, path: str) -> bool:
         """Save model in ONNX format.
-        
+
         Args:
             path: Path to save the model
-            
+
         Returns:
             True if saved successfully
 
@@ -615,30 +685,35 @@ class NeuralNetwork(nn.Module, ABC):
 
             # Export to ONNX
             torch.onnx.export(
-                self,                  # model being run
-                dummy_input,           # model input
-                path,                  # where to save the model
-                export_params=True,    # store the trained parameter weights
-                opset_version=11,      # the ONNX version
+                self,  # model being run
+                dummy_input,  # model input
+                path,  # where to save the model
+                export_params=True,  # store the trained parameter weights
+                opset_version=11,  # the ONNX version
                 do_constant_folding=True,  # optimization
-                input_names=["input"],     # the model's input names
-                output_names=["output"],   # the model's output names
-                dynamic_axes={"input": {0: "batch_size"},    # variable length axes
-                              "output": {0: "batch_size"}},
+                input_names=["input"],  # the model's input names
+                output_names=["output"],  # the model's output names
+                dynamic_axes={
+                    "input": {0: "batch_size"},  # variable length axes
+                    "output": {0: "batch_size"},
+                },
             )
 
             # Save metadata separately
             metadata_path = path + ".metadata.pt"
-            torch.save({
-                "developmental_stage": self.developmental_stage.value,
-                "state_parameters": self.state.parameters,
-                "growth_metrics": self.growth_metrics.to_dict(),
-                "input_dim": self.input_dim,
-                "output_dim": self.output_dim,
-                "name": self.name,
-                "type": self.__class__.__name__,
-                "save_time": datetime.now().isoformat(),
-            }, metadata_path)
+            torch.save(
+                {
+                    "developmental_stage": self.developmental_stage.value,
+                    "state_parameters": self.state.parameters,
+                    "growth_metrics": self.growth_metrics.to_dict(),
+                    "input_dim": self.input_dim,
+                    "output_dim": self.output_dim,
+                    "name": self.name,
+                    "type": self.__class__.__name__,
+                    "save_time": datetime.now().isoformat(),
+                },
+                metadata_path,
+            )
 
             logger.info(f"Model saved in ONNX format to {path}")
             return True
@@ -646,13 +721,15 @@ class NeuralNetwork(nn.Module, ABC):
             logger.error(f"Error exporting to ONNX: {e!s}")
             return False
 
-    def load_model(self, path: str, format: Literal["pytorch", "torchscript", "onnx"] = "pytorch") -> bool:
+    def load_model(
+        self, path: str, format: Literal["pytorch", "torchscript", "onnx"] = "pytorch"
+    ) -> bool:
         """Load the neural network model from disk.
-        
+
         Args:
             path: Path to load the model from
             format: Format the model was saved in
-            
+
         Returns:
             True if loaded successfully, False otherwise
 
@@ -676,10 +753,10 @@ class NeuralNetwork(nn.Module, ABC):
 
     def _load_pytorch(self, path: str) -> bool:
         """Load model from PyTorch format.
-        
+
         Args:
             path: Path to load the model from
-            
+
         Returns:
             True if loaded successfully
 
@@ -689,7 +766,10 @@ class NeuralNetwork(nn.Module, ABC):
 
             # Check if dimensions match
             if "input_dim" in checkpoint and "output_dim" in checkpoint:
-                if checkpoint["input_dim"] != self.input_dim or checkpoint["output_dim"] != self.output_dim:
+                if (
+                    checkpoint["input_dim"] != self.input_dim
+                    or checkpoint["output_dim"] != self.output_dim
+                ):
                     logger.warning(
                         f"Dimension mismatch: saved model has dimensions ({checkpoint['input_dim']}, {checkpoint['output_dim']}), "
                         f"but current model has ({self.input_dim}, {self.output_dim}). Attempting to adapt.",
@@ -702,7 +782,9 @@ class NeuralNetwork(nn.Module, ABC):
 
             # Restore state
             if "developmental_stage" in checkpoint:
-                self.developmental_stage = DevelopmentalStage(checkpoint["developmental_stage"])
+                self.developmental_stage = DevelopmentalStage(
+                    checkpoint["developmental_stage"]
+                )
 
             if "state_parameters" in checkpoint:
                 self.state.parameters = checkpoint["state_parameters"]
@@ -733,10 +815,10 @@ class NeuralNetwork(nn.Module, ABC):
 
     def _load_torchscript(self, path: str) -> bool:
         """Load model from TorchScript format.
-        
+
         Args:
             path: Path to load the model from
-            
+
         Returns:
             True if loaded successfully
 
@@ -756,7 +838,9 @@ class NeuralNetwork(nn.Module, ABC):
 
                 # Restore basic attributes from metadata
                 if "developmental_stage" in metadata:
-                    self.developmental_stage = DevelopmentalStage(metadata["developmental_stage"])
+                    self.developmental_stage = DevelopmentalStage(
+                        metadata["developmental_stage"]
+                    )
 
                 if "state_parameters" in metadata:
                     self.state.parameters = metadata["state_parameters"]
@@ -767,7 +851,9 @@ class NeuralNetwork(nn.Module, ABC):
                             setattr(self.growth_metrics, key, value)
 
             logger.info(f"Model metadata loaded from TorchScript format: {path}")
-            logger.warning("Note: TorchScript loading only restores metadata, not model parameters.")
+            logger.warning(
+                "Note: TorchScript loading only restores metadata, not model parameters."
+            )
             return True
 
         except Exception as e:
@@ -776,10 +862,10 @@ class NeuralNetwork(nn.Module, ABC):
 
     def _load_onnx(self, path: str) -> bool:
         """Load model from ONNX format.
-        
+
         Args:
             path: Path to load the model from
-            
+
         Returns:
             True if loaded successfully
 
@@ -794,7 +880,9 @@ class NeuralNetwork(nn.Module, ABC):
 
                 # Restore basic attributes from metadata
                 if "developmental_stage" in metadata:
-                    self.developmental_stage = DevelopmentalStage(metadata["developmental_stage"])
+                    self.developmental_stage = DevelopmentalStage(
+                        metadata["developmental_stage"]
+                    )
 
                 if "state_parameters" in metadata:
                     self.state.parameters = metadata["state_parameters"]
@@ -805,16 +893,20 @@ class NeuralNetwork(nn.Module, ABC):
                             setattr(self.growth_metrics, key, value)
 
             logger.info(f"Model metadata loaded from ONNX format: {path}")
-            logger.warning("Note: ONNX loading only restores metadata. Use ONNX Runtime for execution.")
+            logger.warning(
+                "Note: ONNX loading only restores metadata. Use ONNX Runtime for execution."
+            )
             return True
 
         except Exception as e:
             logger.error(f"Error loading ONNX model from {path}: {e!s}")
             return False
 
-    def _restore_growth_history(self, growth_history_data: List[Dict[str, Any]]) -> None:
+    def _restore_growth_history(
+        self, growth_history_data: list[dict[str, Any]]
+    ) -> None:
         """Restore growth history from serialized data.
-        
+
         Args:
             growth_history_data: List of serialized growth events
 
@@ -840,13 +932,15 @@ class NeuralNetwork(nn.Module, ABC):
             except Exception as e:
                 logger.warning(f"Error restoring growth event: {e!s}")
 
-    def batch_learning(self, inputs: List[torch.Tensor], targets: Optional[List[torch.Tensor]] = None) -> float:
+    def batch_learning(
+        self, inputs: list[torch.Tensor], targets: list[torch.Tensor] | None = None
+    ) -> float:
         """Learn from a batch of experiences.
-        
+
         Args:
             inputs: List of input tensors
             targets: Optional list of target tensors
-            
+
         Returns:
             Average loss
 
@@ -864,7 +958,9 @@ class NeuralNetwork(nn.Module, ABC):
         # If no targets provided, create pseudo-targets
         if targets is None:
             values, _ = torch.max(outputs, dim=1, keepdim=True)
-            target_batch = torch.where(outputs > 0.8 * values, outputs * 1.1, outputs * 0.9)
+            target_batch = torch.where(
+                outputs > 0.8 * values, outputs * 1.1, outputs * 0.9
+            )
         else:
             target_batch = torch.stack(targets)
 
@@ -873,7 +969,10 @@ class NeuralNetwork(nn.Module, ABC):
         loss = criterion.forward(outputs, target_batch)
 
         # Scale learning by developmental stage and plasticity
-        effective_lr = self.learning_rate * self.state.developmental_weights[self.developmental_stage]
+        effective_lr = (
+            self.learning_rate
+            * self.state.developmental_weights[self.developmental_stage]
+        )
 
         # Backward pass and update weights
         if self.training and effective_lr > 0:
@@ -897,26 +996,34 @@ class NeuralNetwork(nn.Module, ABC):
                         # Keep only recent history
                         max_history = 50
                         if len(self.activity_tracker[name]) > max_history:
-                            self.activity_tracker[name] = self.activity_tracker[name][-max_history:]
+                            self.activity_tracker[name] = self.activity_tracker[name][
+                                -max_history:
+                            ]
 
         # Track this batch as an experience for growth
         self.experience_count += 1
         self.experiences_since_last_growth += 1
 
         # Check for potential growth
-        if (self.growth_eligible and
-            self.experiences_since_last_growth >= self.min_experiences_before_growth):
+        if (
+            self.growth_eligible
+            and self.experiences_since_last_growth >= self.min_experiences_before_growth
+        ):
             self._check_for_network_growth("batch_learning")
 
         return loss.item()
 
-    def evaluate(self, test_inputs: List[torch.Tensor], test_targets: Optional[List[torch.Tensor]] = None) -> Dict[str, float]:
+    def evaluate(
+        self,
+        test_inputs: list[torch.Tensor],
+        test_targets: list[torch.Tensor] | None = None,
+    ) -> dict[str, float]:
         """Evaluate model performance on test data.
-        
+
         Args:
             test_inputs: List of test input tensors
             test_targets: Optional list of test target tensors
-            
+
         Returns:
             Dictionary of evaluation metrics
 
@@ -971,8 +1078,17 @@ class NeuralNetwork(nn.Module, ABC):
                 # Calculate confidence (using entropy as inverse measure)
                 # High entropy = low confidence, low entropy = high confidence
                 epsilon = 1e-7  # Small constant to prevent log(0)
-                normalized_outputs = all_outputs / (all_outputs.sum(dim=1, keepdim=True) + epsilon)
-                entropy = -torch.sum(normalized_outputs * torch.log(normalized_outputs + epsilon), dim=1).mean().item()
+                normalized_outputs = all_outputs / (
+                    all_outputs.sum(dim=1, keepdim=True) + epsilon
+                )
+                entropy = (
+                    -torch.sum(
+                        normalized_outputs * torch.log(normalized_outputs + epsilon),
+                        dim=1,
+                    )
+                    .mean()
+                    .item()
+                )
                 results["confidence"] = 1.0 - min(1.0, entropy)
 
         finally:
@@ -982,13 +1098,15 @@ class NeuralNetwork(nn.Module, ABC):
 
         return results
 
-    def clone_with_growth(self, growth_factor: float = 1.2, min_dim: int = 8) -> "NeuralNetwork":
+    def clone_with_growth(
+        self, growth_factor: float = 1.2, min_dim: int = 8
+    ) -> "NeuralNetwork":
         """Create a larger clone of this network with scaled dimensions.
-        
+
         Args:
             growth_factor: Factor to scale dimensions by
             min_dim: Minimum dimension size to ensure
-            
+
         Returns:
             Larger clone of this network
 
@@ -1002,14 +1120,16 @@ class NeuralNetwork(nn.Module, ABC):
 
     def merge_with(self, other_network: "NeuralNetwork", alpha: float = 0.5) -> None:
         """Merge parameters with another network of the same type.
-        
+
         Args:
             other_network: Network to merge with
             alpha: Weighting factor (0 = keep self, 1 = use other)
 
         """
         if not isinstance(other_network, self.__class__):
-            raise TypeError(f"Cannot merge with network of different type: {type(other_network)}")
+            raise TypeError(
+                f"Cannot merge with network of different type: {type(other_network)}"
+            )
 
         # Verify parameter compatibility
         self_params = dict(self.named_parameters())
@@ -1029,29 +1149,39 @@ class NeuralNetwork(nn.Module, ABC):
 
                 # Check if shapes match
                 if self_param.shape != other_param.shape:
-                    logger.warning(f"Parameter {name} has mismatched shape: {self_param.shape} vs {other_param.shape}")
+                    logger.warning(
+                        f"Parameter {name} has mismatched shape: {self_param.shape} vs {other_param.shape}"
+                    )
                     continue
 
                 # Apply weighted average
-                self_param.data.copy_(alpha * other_param.data + (1 - alpha) * self_param.data)
+                self_param.data.copy_(
+                    alpha * other_param.data + (1 - alpha) * self_param.data
+                )
 
         # Record the merge event
-        self.growth_history.append(NeuralGrowthRecord(
-            event_type="merge",
-            layer_affected="multiple",
-            growth_factor=1.0,
-            trigger=f"merge_with_{other_network.name}",
-            developmental_stage=self.developmental_stage,
-        ))
+        self.growth_history.append(
+            NeuralGrowthRecord(
+                event_type="merge",
+                layer_affected="multiple",
+                growth_factor=1.0,
+                trigger=f"merge_with_{other_network.name}",
+                developmental_stage=self.developmental_stage,
+            )
+        )
 
         # Update growth metrics
-        self.growth_metrics.integration = min(1.0, self.growth_metrics.integration + 0.1)
+        self.growth_metrics.integration = min(
+            1.0, self.growth_metrics.integration + 0.1
+        )
 
-        logger.info(f"Merged network {self.name} with {other_network.name} using alpha={alpha}")
+        logger.info(
+            f"Merged network {self.name} with {other_network.name} using alpha={alpha}"
+        )
 
     def apply_gaussian_noise(self, std_dev: float = 0.01) -> None:
         """Apply Gaussian noise to parameters to promote exploration.
-        
+
         Args:
             std_dev: Standard deviation of the noise
 
@@ -1062,17 +1192,19 @@ class NeuralNetwork(nn.Module, ABC):
                 param.add_(noise)
 
         # Record the noise application
-        self.growth_history.append(NeuralGrowthRecord(
-            event_type="noise",
-            layer_affected="all",
-            growth_factor=1.0,
-            trigger="exploration",
-            developmental_stage=self.developmental_stage,
-        ))
+        self.growth_history.append(
+            NeuralGrowthRecord(
+                event_type="noise",
+                layer_affected="all",
+                growth_factor=1.0,
+                trigger="exploration",
+                developmental_stage=self.developmental_stage,
+            )
+        )
 
     def set_plasticity(self, value: float) -> None:
         """Set the plasticity level of the network.
-        
+
         Args:
             value: New plasticity value (0.0 to 1.0)
 
@@ -1084,16 +1216,18 @@ class NeuralNetwork(nn.Module, ABC):
         self.learning_rate = 0.01 * (0.5 + value)
 
         # Update state
-        self.update_state({
-            "growth_metrics": self.growth_metrics.to_dict(),
-            "learning_rate": self.learning_rate,
-        })
+        self.update_state(
+            {
+                "growth_metrics": self.growth_metrics.to_dict(),
+                "learning_rate": self.learning_rate,
+            }
+        )
 
         logger.info(f"Set plasticity of network {self.name} to {value}")
 
-    def get_complexity_metrics(self) -> Dict[str, Any]:
+    def get_complexity_metrics(self) -> dict[str, Any]:
         """Calculate complexity metrics for the network.
-        
+
         Returns:
             Dictionary of complexity metrics
 

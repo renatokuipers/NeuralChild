@@ -7,7 +7,7 @@ that evolve in complexity through developmental stages.
 import logging
 import random
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Any
 
 import torch
 from torch import nn
@@ -24,17 +24,20 @@ from core.schemas import (
 # Configure logging
 logger = logging.getLogger(__name__)
 
+
 class ThoughtsNetwork(NeuralNetwork):
     """Thoughts network that generates internal mental processes.
-    
+
     This network handles the generation of thoughts, forming of beliefs,
     and the development of conceptual understanding that increases in
     complexity as the mind develops through different stages.
     """
 
-    def __init__(self, input_dim: int = 64, hidden_dim: int = 128, output_dim: int = 64):
+    def __init__(
+        self, input_dim: int = 64, hidden_dim: int = 128, output_dim: int = 64
+    ):
         """Initialize the thoughts network.
-        
+
         Args:
             input_dim: Dimension of input vectors
             hidden_dim: Dimension of hidden layers
@@ -107,20 +110,22 @@ class ThoughtsNetwork(NeuralNetwork):
         }
 
         # Initialize state parameters
-        self.update_state({
-            "abstract_thinking": self.abstract_thinking,
-            "logical_reasoning": self.logical_reasoning,
-            "creativity": self.creativity,
-            "thought_count": 0,
-            "belief_count": 0,
-        })
+        self.update_state(
+            {
+                "abstract_thinking": self.abstract_thinking,
+                "logical_reasoning": self.logical_reasoning,
+                "creativity": self.creativity,
+                "thought_count": 0,
+                "belief_count": 0,
+            }
+        )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Forward pass of the neural network.
-        
+
         Args:
             x: Input tensor representing thought stimulus
-            
+
         Returns:
             Output tensor representing generated thought
 
@@ -158,18 +163,22 @@ class ThoughtsNetwork(NeuralNetwork):
         if random.random() < self.creativity:
             # Create a creative "insight" by emphasizing certain dimensions
             creative_mask = torch.zeros_like(thought)
-            creative_idx = random.sample(range(self.output_dim), int(self.output_dim * 0.2))
-            creative_mask[:, creative_idx] = torch.rand(batch_size, len(creative_idx)) * self.creativity
+            creative_idx = random.sample(
+                range(self.output_dim), int(self.output_dim * 0.2)
+            )
+            creative_mask[:, creative_idx] = (
+                torch.rand(batch_size, len(creative_idx)) * self.creativity
+            )
             thought = torch.clamp(thought + creative_mask, 0, 1)
 
         return thought
 
-    def process_message(self, message: NetworkMessage) -> Optional[VectorOutput]:
+    def process_message(self, message: NetworkMessage) -> VectorOutput | None:
         """Process a message from another neural network.
-        
+
         Args:
             message: Message from another network
-            
+
         Returns:
             Optional vector output as response
 
@@ -182,9 +191,11 @@ class ThoughtsNetwork(NeuralNetwork):
 
                 # Ensure vector is the right size
                 if len(vector_data) > self.input_dim:
-                    vector_data = vector_data[:self.input_dim]
+                    vector_data = vector_data[: self.input_dim]
                 elif len(vector_data) < self.input_dim:
-                    vector_data = vector_data + [0.0] * (self.input_dim - len(vector_data))
+                    vector_data = vector_data + [0.0] * (
+                        self.input_dim - len(vector_data)
+                    )
 
                 # Convert to tensor and process
                 input_tensor = torch.tensor(vector_data, dtype=torch.float32)
@@ -268,9 +279,14 @@ class ThoughtsNetwork(NeuralNetwork):
                         )
 
                         # Add to state for the mind to retrieve
-                        self.update_state({
-                            "pending_messages": self.state.parameters.get("pending_messages", []) + [belief_message.to_dict()],
-                        })
+                        self.update_state(
+                            {
+                                "pending_messages": self.state.parameters.get(
+                                    "pending_messages", []
+                                )
+                                + [belief_message.to_dict()],
+                            }
+                        )
 
                 # Generate a thought about the pattern
                 dummy_vector = torch.zeros(self.input_dim)
@@ -317,7 +333,9 @@ class ThoughtsNetwork(NeuralNetwork):
 
                     if relevant_beliefs:
                         # Return a vector based on most confident belief
-                        most_confident = max(relevant_beliefs, key=lambda b: b.confidence)
+                        most_confident = max(
+                            relevant_beliefs, key=lambda b: b.confidence
+                        )
 
                         belief_vector = torch.zeros(self.output_dim)
                         # In a real implementation, this would encode the belief
@@ -330,14 +348,16 @@ class ThoughtsNetwork(NeuralNetwork):
 
         return None
 
-    def _generate_thought(self, output: torch.Tensor, source: str, source_info: Dict[str, Any]) -> Dict[str, Any]:
+    def _generate_thought(
+        self, output: torch.Tensor, source: str, source_info: dict[str, Any]
+    ) -> dict[str, Any]:
         """Generate a thought based on network output.
-        
+
         Args:
             output: Network output tensor
             source: Source of the thought (perception, emotion, etc.)
             source_info: Information about the source
-            
+
         Returns:
             Dictionary containing thought information
 
@@ -360,13 +380,13 @@ class ThoughtsNetwork(NeuralNetwork):
 
         return thought
 
-    def _generate_thought_text(self, source: str, source_info: Dict[str, Any]) -> str:
+    def _generate_thought_text(self, source: str, source_info: dict[str, Any]) -> str:
         """Generate text representation of a thought.
-        
+
         Args:
             source: Source of the thought
             source_info: Information about the source
-            
+
         Returns:
             Text representation of the thought
 
@@ -421,9 +441,9 @@ class ThoughtsNetwork(NeuralNetwork):
             return "I notice a pattern that seems significant"
         return "I am contemplating various abstract concepts"
 
-    def _remember_thought(self, thought: Dict[str, Any]) -> None:
+    def _remember_thought(self, thought: dict[str, Any]) -> None:
         """Remember a thought.
-        
+
         Args:
             thought: Thought information to remember
 
@@ -437,18 +457,22 @@ class ThoughtsNetwork(NeuralNetwork):
             self.current_thoughts = self.current_thoughts[-max_thoughts:]
 
         # Update state
-        self.update_state({
-            "thought_count": self.state.parameters.get("thought_count", 0) + 1,
-            "current_thoughts": [t["text"] for t in self.current_thoughts],
-        })
+        self.update_state(
+            {
+                "thought_count": self.state.parameters.get("thought_count", 0) + 1,
+                "current_thoughts": [t["text"] for t in self.current_thoughts],
+            }
+        )
 
-    def _form_belief(self, confidence: float, source_info: Dict[str, Any]) -> Optional[Belief]:
+    def _form_belief(
+        self, confidence: float, source_info: dict[str, Any]
+    ) -> Belief | None:
         """Form a belief based on observed patterns or experiences.
-        
+
         Args:
             confidence: Confidence level in the belief
             source_info: Information about the source
-            
+
         Returns:
             Formed belief or None
 
@@ -485,7 +509,7 @@ class ThoughtsNetwork(NeuralNetwork):
 
     def autonomous_step(self) -> None:
         """Autonomous processing step.
-        
+
         This function is called periodically by the mind to allow
         the network to perform autonomous processing.
         """
@@ -510,7 +534,10 @@ class ThoughtsNetwork(NeuralNetwork):
             self._remember_thought(thought_info)
 
         # Update beliefs based on logical reasoning
-        if self.developmental_stage.value >= DevelopmentalStage.CHILD.value and random.random() < self.logical_reasoning:
+        if (
+            self.developmental_stage.value >= DevelopmentalStage.CHILD.value
+            and random.random() < self.logical_reasoning
+        ):
             # In a real implementation, this would use actual logical inference
             # For now, we'll occasionally update belief confidence
             if self.beliefs:
@@ -520,11 +547,11 @@ class ThoughtsNetwork(NeuralNetwork):
 
     def update_developmental_stage(self, stage: DevelopmentalStage) -> None:
         """Update the developmental stage of the network.
-        
+
         As the network develops, abstract thinking and logical reasoning improve,
         while creativity follows a unique trajectory (high in early childhood,
         then dips in adolescence before rising again in maturity).
-        
+
         Args:
             stage: New developmental stage
 
@@ -565,11 +592,13 @@ class ThoughtsNetwork(NeuralNetwork):
             self.logical_reasoning = stage_values[stage]["logical_reasoning"]
             self.creativity = stage_values[stage]["creativity"]
 
-            self.update_state({
-                "abstract_thinking": self.abstract_thinking,
-                "logical_reasoning": self.logical_reasoning,
-                "creativity": self.creativity,
-            })
+            self.update_state(
+                {
+                    "abstract_thinking": self.abstract_thinking,
+                    "logical_reasoning": self.logical_reasoning,
+                    "creativity": self.creativity,
+                }
+            )
 
         # Update vocabulary with development
         if stage == DevelopmentalStage.TODDLER:
@@ -582,13 +611,19 @@ class ThoughtsNetwork(NeuralNetwork):
             # Child vocabulary expands further
             self.vocabulary["objects"].extend(["friend", "game", "book", "school"])
             self.vocabulary["actions"].extend(["read", "write", "think", "learn"])
-            self.vocabulary["properties"].extend(["interesting", "boring", "fun", "difficult"])
+            self.vocabulary["properties"].extend(
+                ["interesting", "boring", "fun", "difficult"]
+            )
 
         elif stage == DevelopmentalStage.ADOLESCENT:
             # Adolescent vocabulary becomes more abstract
             self.vocabulary["objects"].extend(["future", "past", "idea", "concept"])
-            self.vocabulary["actions"].extend(["understand", "question", "analyze", "believe"])
-            self.vocabulary["properties"].extend(["complex", "simple", "meaningful", "confusing"])
+            self.vocabulary["actions"].extend(
+                ["understand", "question", "analyze", "believe"]
+            )
+            self.vocabulary["properties"].extend(
+                ["complex", "simple", "meaningful", "confusing"]
+            )
 
         # Reset hidden state to accommodate new stage
         self.hidden_state = None
@@ -597,7 +632,7 @@ class ThoughtsNetwork(NeuralNetwork):
 
     def generate_text_output(self) -> TextOutput:
         """Generate a human-readable text output from the neural network.
-        
+
         Returns:
             Text representation of the network's current state
 
@@ -658,20 +693,24 @@ class ThoughtsNetwork(NeuralNetwork):
             confidence=confidence,
         )
 
-    def clone_with_growth(self, growth_factor: float = 1.2, min_dim: int = 8) -> "ThoughtsNetwork":
+    def clone_with_growth(
+        self, growth_factor: float = 1.2, min_dim: int = 8
+    ) -> "ThoughtsNetwork":
         """Create a larger clone of this network with scaled dimensions.
-        
+
         Args:
             growth_factor: Factor to scale dimensions by
             min_dim: Minimum dimension size to ensure
-            
+
         Returns:
             Larger clone of this network with scaled dimensions
 
         """
         # Calculate new dimensions
         new_input_dim = max(min_dim, int(self.input_dim * growth_factor))
-        new_hidden_dim = max(min_dim * 2, int(self.thought_rnn.hidden_size * growth_factor))
+        new_hidden_dim = max(
+            min_dim * 2, int(self.thought_rnn.hidden_size * growth_factor)
+        )
         new_output_dim = max(min_dim, int(self.output_dim * growth_factor))
 
         # Create new network with expanded dimensions
@@ -696,15 +735,21 @@ class ThoughtsNetwork(NeuralNetwork):
 
         # Record growth event
         new_network.growth_history = copy.deepcopy(self.growth_history)
-        new_network.growth_history.append(NeuralGrowthRecord(
-            event_type="network_expansion",
-            layer_affected="all",
-            old_shape=[self.input_dim, self.thought_rnn.hidden_size, self.output_dim],
-            new_shape=[new_input_dim, new_hidden_dim, new_output_dim],
-            growth_factor=growth_factor,
-            trigger="clone_with_growth",
-            developmental_stage=self.developmental_stage,
-        ))
+        new_network.growth_history.append(
+            NeuralGrowthRecord(
+                event_type="network_expansion",
+                layer_affected="all",
+                old_shape=[
+                    self.input_dim,
+                    self.thought_rnn.hidden_size,
+                    self.output_dim,
+                ],
+                new_shape=[new_input_dim, new_hidden_dim, new_output_dim],
+                growth_factor=growth_factor,
+                trigger="clone_with_growth",
+                developmental_stage=self.developmental_stage,
+            )
+        )
 
         # Reset hidden state for new dimensions
         new_network.hidden_state = None

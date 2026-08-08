@@ -10,7 +10,7 @@ import os
 import random
 import uuid
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 import numpy as np
 import torch
@@ -35,19 +35,28 @@ from mind.schemas import (
 )
 
 # Configure logging
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
 logger = logging.getLogger(__name__)
+
 
 class MemoryCluster(BaseModel):
     """Cluster of related memories forming a coherent concept or experience."""
 
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     label: str = Field(..., description="Human-readable label for this cluster")
-    memory_ids: List[str] = Field(default_factory=list, description="IDs of memories in this cluster")
-    centroid: Optional[List[float]] = Field(default=None, description="Vector representation of cluster center")
+    memory_ids: list[str] = Field(
+        default_factory=list, description="IDs of memories in this cluster"
+    )
+    centroid: list[float] | None = Field(
+        default=None, description="Vector representation of cluster center"
+    )
     creation_time: datetime = Field(default_factory=datetime.now)
     last_access_time: datetime = Field(default_factory=datetime.now)
-    importance: float = Field(default=0.5, ge=0.0, le=1.0, description="Importance of this cluster")
+    importance: float = Field(
+        default=0.5, ge=0.0, le=1.0, description="Importance of this cluster"
+    )
     developmental_stage: DevelopmentalStage = Field(default=DevelopmentalStage.INFANT)
 
     class Config:
@@ -69,7 +78,7 @@ class MemoryCluster(BaseModel):
             return True
         return False
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization."""
         return {
             "id": self.id,
@@ -82,19 +91,22 @@ class MemoryCluster(BaseModel):
             "developmental_stage": self.developmental_stage.name,
         }
 
+
 class BeliefNetwork(BaseModel):
     """Network of beliefs and their relationships."""
 
-    beliefs: Dict[str, Belief] = Field(default_factory=dict, description="Beliefs by ID")
-    belief_relationships: Dict[str, Dict[str, float]] = Field(
+    beliefs: dict[str, Belief] = Field(
+        default_factory=dict, description="Beliefs by ID"
+    )
+    belief_relationships: dict[str, dict[str, float]] = Field(
         default_factory=dict,
         description="Relationships between beliefs (id -> {id -> strength})",
     )
-    evidence_index: Dict[str, List[str]] = Field(
+    evidence_index: dict[str, list[str]] = Field(
         default_factory=dict,
         description="Index of memories that support beliefs (memory_id -> [belief_ids])",
     )
-    contradictions: List[Tuple[str, str, float]] = Field(
+    contradictions: list[tuple[str, str, float]] = Field(
         default_factory=list,
         description="Pairs of contradicting beliefs with strength (id1, id2, strength)",
     )
@@ -104,10 +116,10 @@ class BeliefNetwork(BaseModel):
 
     def add_belief(self, belief: Belief) -> str:
         """Add a belief to the network.
-        
+
         Args:
             belief: Belief to add
-            
+
         Returns:
             ID of the added belief
 
@@ -132,10 +144,10 @@ class BeliefNetwork(BaseModel):
 
     def remove_belief(self, belief_id: str) -> bool:
         """Remove a belief from the network.
-        
+
         Args:
             belief_id: ID of belief to remove
-            
+
         Returns:
             True if removed, False if not found
 
@@ -157,27 +169,33 @@ class BeliefNetwork(BaseModel):
 
         # Remove from evidence index
         for memory_id in belief.supporting_memories:
-            if memory_id in self.evidence_index and belief_id in self.evidence_index[memory_id]:
+            if (
+                memory_id in self.evidence_index
+                and belief_id in self.evidence_index[memory_id]
+            ):
                 self.evidence_index[memory_id].remove(belief_id)
                 if not self.evidence_index[memory_id]:
                     del self.evidence_index[memory_id]
 
         # Remove from contradictions
         self.contradictions = [
-            (id1, id2, strength) for id1, id2, strength in self.contradictions
+            (id1, id2, strength)
+            for id1, id2, strength in self.contradictions
             if id1 != belief_id and id2 != belief_id
         ]
 
         return True
 
-    def add_relationship(self, belief_id1: str, belief_id2: str, strength: float) -> bool:
+    def add_relationship(
+        self, belief_id1: str, belief_id2: str, strength: float
+    ) -> bool:
         """Add a relationship between two beliefs.
-        
+
         Args:
             belief_id1: ID of first belief
             belief_id2: ID of second belief
             strength: Relationship strength (0.0 to 1.0)
-            
+
         Returns:
             True if added, False if error
 
@@ -197,14 +215,16 @@ class BeliefNetwork(BaseModel):
 
         return True
 
-    def add_contradiction(self, belief_id1: str, belief_id2: str, strength: float = 1.0) -> bool:
+    def add_contradiction(
+        self, belief_id1: str, belief_id2: str, strength: float = 1.0
+    ) -> bool:
         """Add a contradiction between two beliefs.
-        
+
         Args:
             belief_id1: ID of first belief
             belief_id2: ID of second belief
             strength: Contradiction strength (0.0 to 1.0)
-            
+
         Returns:
             True if added, False if error
 
@@ -214,7 +234,9 @@ class BeliefNetwork(BaseModel):
 
         # Check if contradiction already exists
         for i, (id1, id2, _) in enumerate(self.contradictions):
-            if (id1 == belief_id1 and id2 == belief_id2) or (id1 == belief_id2 and id2 == belief_id1):
+            if (id1 == belief_id1 and id2 == belief_id2) or (
+                id1 == belief_id2 and id2 == belief_id1
+            ):
                 # Update existing contradiction
                 self.contradictions[i] = (id1, id2, strength)
                 return True
@@ -223,13 +245,15 @@ class BeliefNetwork(BaseModel):
         self.contradictions.append((belief_id1, belief_id2, strength))
         return True
 
-    def update_with_new_evidence(self, memory_id: str, memory_content: Dict[str, Any]) -> List[str]:
+    def update_with_new_evidence(
+        self, memory_id: str, memory_content: dict[str, Any]
+    ) -> list[str]:
         """Update beliefs based on new evidence.
-        
+
         Args:
             memory_id: ID of the new memory
             memory_content: Content of the memory
-            
+
         Returns:
             List of affected belief IDs
 
@@ -272,9 +296,9 @@ class BeliefNetwork(BaseModel):
 
         return affected_beliefs
 
-    def resolve_contradictions(self) -> List[str]:
+    def resolve_contradictions(self) -> list[str]:
         """Resolve contradictions between beliefs.
-        
+
         Returns:
             List of affected belief IDs
 
@@ -300,8 +324,12 @@ class BeliefNetwork(BaseModel):
                 old_conf1 = belief1.confidence
                 old_conf2 = belief2.confidence
 
-                belief1.update_confidence(max(0.1, belief1.confidence - 0.05 * strength))
-                belief2.update_confidence(max(0.1, belief2.confidence - 0.05 * strength))
+                belief1.update_confidence(
+                    max(0.1, belief1.confidence - 0.05 * strength)
+                )
+                belief2.update_confidence(
+                    max(0.1, belief2.confidence - 0.05 * strength)
+                )
 
                 affected_beliefs.extend([belief_id1, belief_id2])
 
@@ -315,18 +343,20 @@ class BeliefNetwork(BaseModel):
                     weaker_id = belief_id1
 
                 old_conf = weaker_belief.confidence
-                weaker_belief.update_confidence(max(0.1, weaker_belief.confidence - 0.1 * strength))
+                weaker_belief.update_confidence(
+                    max(0.1, weaker_belief.confidence - 0.1 * strength)
+                )
 
                 affected_beliefs.append(weaker_id)
 
         return affected_beliefs
 
-    def _find_relevant_beliefs(self, memory_content: Dict[str, Any]) -> List[str]:
+    def _find_relevant_beliefs(self, memory_content: dict[str, Any]) -> list[str]:
         """Find beliefs that might be relevant to a memory.
-        
+
         Args:
             memory_content: Content of the memory
-            
+
         Returns:
             List of relevant belief IDs
 
@@ -350,27 +380,41 @@ class BeliefNetwork(BaseModel):
         # Check each belief for relevance
         for belief_id, belief in self.beliefs.items():
             # Check if any key phrase appears in the belief parts
-            if any(phrase in belief.subject for phrase in key_phrases if isinstance(phrase, str)):
+            if any(
+                phrase in belief.subject
+                for phrase in key_phrases
+                if isinstance(phrase, str)
+            ):
                 relevant_beliefs.append(belief_id)
                 continue
 
-            if any(phrase in belief.predicate for phrase in key_phrases if isinstance(phrase, str)):
+            if any(
+                phrase in belief.predicate
+                for phrase in key_phrases
+                if isinstance(phrase, str)
+            ):
                 relevant_beliefs.append(belief_id)
                 continue
 
-            if any(phrase in belief.object for phrase in key_phrases if isinstance(phrase, str)):
+            if any(
+                phrase in belief.object
+                for phrase in key_phrases
+                if isinstance(phrase, str)
+            ):
                 relevant_beliefs.append(belief_id)
                 continue
 
         return relevant_beliefs
 
-    def _calculate_evidence_impact(self, belief: Belief, memory_content: Dict[str, Any]) -> float:
+    def _calculate_evidence_impact(
+        self, belief: Belief, memory_content: dict[str, Any]
+    ) -> float:
         """Calculate the impact of evidence on a belief.
-        
+
         Args:
             belief: Belief to evaluate
             memory_content: Content of the memory
-            
+
         Returns:
             Impact value (-1.0 to 1.0, negative=contradicts, positive=supports)
 
@@ -388,12 +432,16 @@ class BeliefNetwork(BaseModel):
 
                 # Check if emotions align with belief
                 positive_emotions = [
-                    EmotionType.JOY, EmotionType.TRUST,
-                    EmotionType.ANTICIPATION, EmotionType.INTEREST,
+                    EmotionType.JOY,
+                    EmotionType.TRUST,
+                    EmotionType.ANTICIPATION,
+                    EmotionType.INTEREST,
                 ]
                 negative_emotions = [
-                    EmotionType.SADNESS, EmotionType.FEAR,
-                    EmotionType.ANGER, EmotionType.DISGUST,
+                    EmotionType.SADNESS,
+                    EmotionType.FEAR,
+                    EmotionType.ANGER,
+                    EmotionType.DISGUST,
                 ]
 
                 # Convert string emotions to enum
@@ -406,27 +454,53 @@ class BeliefNetwork(BaseModel):
                         pass
 
                 # Beliefs with "good", "like" tend to align with positive emotions
-                has_positive_terms = any(term in belief.object for term in ["good", "like", "happy", "nice"])
-                has_negative_terms = any(term in belief.object for term in ["bad", "dislike", "sad", "angry"])
+                has_positive_terms = any(
+                    term in belief.object for term in ["good", "like", "happy", "nice"]
+                )
+                has_negative_terms = any(
+                    term in belief.object for term in ["bad", "dislike", "sad", "angry"]
+                )
 
                 # Modify impact based on emotional congruence
-                if (has_positive_terms and any(emotion in positive_emotions for emotion in present_emotions)) or (has_negative_terms and any(emotion in negative_emotions for emotion in present_emotions)):
+                if (
+                    has_positive_terms
+                    and any(
+                        emotion in positive_emotions for emotion in present_emotions
+                    )
+                ) or (
+                    has_negative_terms
+                    and any(
+                        emotion in negative_emotions for emotion in present_emotions
+                    )
+                ):
                     impact += 0.2
-                elif (has_positive_terms and any(emotion in negative_emotions for emotion in present_emotions)) or (has_negative_terms and any(emotion in positive_emotions for emotion in present_emotions)):
+                elif (
+                    has_positive_terms
+                    and any(
+                        emotion in negative_emotions for emotion in present_emotions
+                    )
+                ) or (
+                    has_negative_terms
+                    and any(
+                        emotion in positive_emotions for emotion in present_emotions
+                    )
+                ):
                     impact -= 0.2
 
         # More complex evidence impact calculation could be implemented here
 
         return impact
 
-    def _flatten_dict(self, d: Dict[str, Any], parent_key: str = "", sep: str = "_") -> Dict[str, Any]:
+    def _flatten_dict(
+        self, d: dict[str, Any], parent_key: str = "", sep: str = "_"
+    ) -> dict[str, Any]:
         """Flatten nested dictionaries for easier searching.
-        
+
         Args:
             d: Dictionary to flatten
             parent_key: Key from parent dictionary
             sep: Separator for keys
-            
+
         Returns:
             Flattened dictionary
 
@@ -442,13 +516,15 @@ class BeliefNetwork(BaseModel):
 
         return dict(items)
 
-    def get_related_beliefs(self, belief_id: str, min_strength: float = 0.3) -> List[Tuple[str, float]]:
+    def get_related_beliefs(
+        self, belief_id: str, min_strength: float = 0.3
+    ) -> list[tuple[str, float]]:
         """Get beliefs related to a given belief.
-        
+
         Args:
             belief_id: ID of the belief to get relations for
             min_strength: Minimum relationship strength to include
-            
+
         Returns:
             List of tuples (belief_id, relationship_strength)
 
@@ -462,7 +538,7 @@ class BeliefNetwork(BaseModel):
             if strength >= min_strength
         ]
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization."""
         return {
             "beliefs": {k: v.to_dict() for k, v in self.beliefs.items()},
@@ -472,12 +548,12 @@ class BeliefNetwork(BaseModel):
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "BeliefNetwork":
+    def from_dict(cls, data: dict[str, Any]) -> "BeliefNetwork":
         """Create a belief network from a dictionary.
-        
+
         Args:
             data: Dictionary representation
-            
+
         Returns:
             BeliefNetwork instance
 
@@ -494,12 +570,18 @@ class BeliefNetwork(BaseModel):
                 stage = DevelopmentalStage.INFANT
 
             # Convert timestamp strings to datetime
-            creation_time = datetime.fromisoformat(belief_data.pop("creation_time", datetime.now().isoformat()))
-            last_update_time = datetime.fromisoformat(belief_data.pop("last_update_time", datetime.now().isoformat()))
+            creation_time = datetime.fromisoformat(
+                belief_data.pop("creation_time", datetime.now().isoformat())
+            )
+            last_update_time = datetime.fromisoformat(
+                belief_data.pop("last_update_time", datetime.now().isoformat())
+            )
 
             stored_id = belief_data.pop("id", None)
             if stored_id is not None and stored_id != belief_id:
-                logger.warning(f"Belief keyed {belief_id} stores id {stored_id}; keeping {belief_id}")
+                logger.warning(
+                    f"Belief keyed {belief_id} stores id {stored_id}; keeping {belief_id}"
+                )
 
             # Create belief
             belief = Belief(
@@ -522,23 +604,24 @@ class BeliefNetwork(BaseModel):
 
         return network
 
+
 class NeedMotivationSystem(BaseModel):
     """System for managing needs and motivations that drive behavior."""
 
-    needs: Dict[str, Need] = Field(default_factory=dict, description="Current needs")
-    need_history: Dict[str, List[Tuple[datetime, float]]] = Field(
+    needs: dict[str, Need] = Field(default_factory=dict, description="Current needs")
+    need_history: dict[str, list[tuple[datetime, float]]] = Field(
         default_factory=dict,
         description="History of need intensity over time",
     )
-    need_satisfaction_history: Dict[str, List[Tuple[datetime, float]]] = Field(
+    need_satisfaction_history: dict[str, list[tuple[datetime, float]]] = Field(
         default_factory=dict,
         description="History of need satisfaction over time",
     )
-    need_priorities: Dict[str, float] = Field(
+    need_priorities: dict[str, float] = Field(
         default_factory=dict,
         description="Priority weights for different needs",
     )
-    developmental_need_profiles: Dict[DevelopmentalStage, Dict[str, float]] = Field(
+    developmental_need_profiles: dict[DevelopmentalStage, dict[str, float]] = Field(
         default_factory=dict,
         description="Need profiles for different developmental stages",
     )
@@ -563,12 +646,18 @@ class NeedMotivationSystem(BaseModel):
         """Initialize the default set of needs."""
         default_needs = {
             "comfort": Need(name="comfort", intensity=0.7, satisfaction_level=0.3),
-            "stimulation": Need(name="stimulation", intensity=0.8, satisfaction_level=0.2),
+            "stimulation": Need(
+                name="stimulation", intensity=0.8, satisfaction_level=0.2
+            ),
             "rest": Need(name="rest", intensity=0.3, satisfaction_level=0.7),
             "bonding": Need(name="bonding", intensity=0.9, satisfaction_level=0.1),
             "autonomy": Need(name="autonomy", intensity=0.1, satisfaction_level=0.1),
-            "understanding": Need(name="understanding", intensity=0.6, satisfaction_level=0.2),
-            "competence": Need(name="competence", intensity=0.4, satisfaction_level=0.3),
+            "understanding": Need(
+                name="understanding", intensity=0.6, satisfaction_level=0.2
+            ),
+            "competence": Need(
+                name="competence", intensity=0.4, satisfaction_level=0.3
+            ),
         }
 
         self.needs.update(default_needs)
@@ -643,7 +732,7 @@ class NeedMotivationSystem(BaseModel):
 
     def update_needs(self, elapsed_seconds: float, stage: DevelopmentalStage) -> None:
         """Update need intensities based on time elapsed and development.
-        
+
         Args:
             elapsed_seconds: Time elapsed since last update (seconds)
             stage: Current developmental stage
@@ -687,28 +776,36 @@ class NeedMotivationSystem(BaseModel):
 
             # Natural decrease in satisfaction over time
             satisfaction_decay = 0.0002 * elapsed_seconds
-            need.satisfaction_level = max(0.0, need.satisfaction_level - satisfaction_decay)
+            need.satisfaction_level = max(
+                0.0, need.satisfaction_level - satisfaction_decay
+            )
 
             # Record history
             self.need_history[need_name].append((current_time, need.intensity))
-            self.need_satisfaction_history[need_name].append((current_time, need.satisfaction_level))
+            self.need_satisfaction_history[need_name].append(
+                (current_time, need.satisfaction_level)
+            )
 
             # Limit history length
             max_history = 100
             if len(self.need_history[need_name]) > max_history:
-                self.need_history[need_name] = self.need_history[need_name][-max_history:]
+                self.need_history[need_name] = self.need_history[need_name][
+                    -max_history:
+                ]
             if len(self.need_satisfaction_history[need_name]) > max_history:
-                self.need_satisfaction_history[need_name] = self.need_satisfaction_history[need_name][-max_history:]
+                self.need_satisfaction_history[need_name] = (
+                    self.need_satisfaction_history[need_name][-max_history:]
+                )
 
         self.last_update = current_time
 
     def satisfy_need(self, need_name: str, amount: float) -> bool:
         """Satisfy a specific need.
-        
+
         Args:
             need_name: Name of the need to satisfy
             amount: Amount to satisfy by (0.0 to 1.0)
-            
+
         Returns:
             True if successful, False if need not found
 
@@ -726,13 +823,15 @@ class NeedMotivationSystem(BaseModel):
         # Record in history
         current_time = datetime.now()
         self.need_history[need_name].append((current_time, need.intensity))
-        self.need_satisfaction_history[need_name].append((current_time, need.satisfaction_level))
+        self.need_satisfaction_history[need_name].append(
+            (current_time, need.satisfaction_level)
+        )
 
         return True
 
-    def get_dominant_need(self) -> Optional[Tuple[str, float]]:
+    def get_dominant_need(self) -> tuple[str, float] | None:
         """Get the currently dominant need.
-        
+
         Returns:
             Tuple of (need_name, weighted_intensity) or None if no needs
 
@@ -744,7 +843,9 @@ class NeedMotivationSystem(BaseModel):
         weighted_intensities = []
         for need_name, need in self.needs.items():
             priority = self.need_priorities.get(need_name, 0.5)
-            satisfaction_factor = 1.0 - (need.satisfaction_level * 0.7)  # Less satisfied needs get higher weight
+            satisfaction_factor = 1.0 - (
+                need.satisfaction_level * 0.7
+            )  # Less satisfied needs get higher weight
             weighted_intensity = need.intensity * priority * satisfaction_factor
             weighted_intensities.append((need_name, weighted_intensity))
 
@@ -753,12 +854,12 @@ class NeedMotivationSystem(BaseModel):
 
         return weighted_intensities[0]
 
-    def get_expressed_needs(self, threshold: float = 0.5) -> Dict[str, float]:
+    def get_expressed_needs(self, threshold: float = 0.5) -> dict[str, float]:
         """Get needs with intensity above a threshold.
-        
+
         Args:
             threshold: Minimum intensity to include
-            
+
         Returns:
             Dictionary of need_name -> intensity
 
@@ -771,7 +872,7 @@ class NeedMotivationSystem(BaseModel):
 
     def update_developmental_stage(self, stage: DevelopmentalStage) -> None:
         """Update need system for a new developmental stage.
-        
+
         Args:
             stage: New developmental stage
 
@@ -784,7 +885,9 @@ class NeedMotivationSystem(BaseModel):
         if stage == DevelopmentalStage.TODDLER:
             # Toddlers develop need for exploration
             if "exploration" not in self.needs:
-                self.needs["exploration"] = Need(name="exploration", intensity=0.7, satisfaction_level=0.2)
+                self.needs["exploration"] = Need(
+                    name="exploration", intensity=0.7, satisfaction_level=0.2
+                )
                 self.need_history["exploration"] = []
                 self.need_satisfaction_history["exploration"] = []
                 self.need_priorities["exploration"] = 0.8
@@ -792,7 +895,9 @@ class NeedMotivationSystem(BaseModel):
         elif stage == DevelopmentalStage.CHILD:
             # Children develop need for achievement
             if "achievement" not in self.needs:
-                self.needs["achievement"] = Need(name="achievement", intensity=0.6, satisfaction_level=0.3)
+                self.needs["achievement"] = Need(
+                    name="achievement", intensity=0.6, satisfaction_level=0.3
+                )
                 self.need_history["achievement"] = []
                 self.need_satisfaction_history["achievement"] = []
                 self.need_priorities["achievement"] = 0.7
@@ -800,13 +905,17 @@ class NeedMotivationSystem(BaseModel):
         elif stage == DevelopmentalStage.ADOLESCENT:
             # Adolescents develop need for identity and belonging
             if "identity" not in self.needs:
-                self.needs["identity"] = Need(name="identity", intensity=0.8, satisfaction_level=0.2)
+                self.needs["identity"] = Need(
+                    name="identity", intensity=0.8, satisfaction_level=0.2
+                )
                 self.need_history["identity"] = []
                 self.need_satisfaction_history["identity"] = []
                 self.need_priorities["identity"] = 0.9
 
             if "belonging" not in self.needs:
-                self.needs["belonging"] = Need(name="belonging", intensity=0.7, satisfaction_level=0.3)
+                self.needs["belonging"] = Need(
+                    name="belonging", intensity=0.7, satisfaction_level=0.3
+                )
                 self.need_history["belonging"] = []
                 self.need_satisfaction_history["belonging"] = []
                 self.need_priorities["belonging"] = 0.8
@@ -814,23 +923,28 @@ class NeedMotivationSystem(BaseModel):
         elif stage == DevelopmentalStage.MATURE:
             # Mature individuals develop need for self-actualization
             if "self_actualization" not in self.needs:
-                self.needs["self_actualization"] = Need(name="self_actualization", intensity=0.6, satisfaction_level=0.2)
+                self.needs["self_actualization"] = Need(
+                    name="self_actualization", intensity=0.6, satisfaction_level=0.2
+                )
                 self.need_history["self_actualization"] = []
                 self.need_satisfaction_history["self_actualization"] = []
                 self.need_priorities["self_actualization"] = 0.9
 
-    def get_need_trend(self, need_name: str, window: int = 10) -> Optional[float]:
+    def get_need_trend(self, need_name: str, window: int = 10) -> float | None:
         """Calculate trend in a need's intensity over recent history.
-        
+
         Args:
             need_name: Name of need to calculate trend for
             window: Number of recent entries to use
-            
+
         Returns:
             Trend value (positive=increasing, negative=decreasing) or None if insufficient data
 
         """
-        if need_name not in self.need_history or len(self.need_history[need_name]) < window:
+        if (
+            need_name not in self.need_history
+            or len(self.need_history[need_name]) < window
+        ):
             return None
 
         # Get recent history entries
@@ -843,31 +957,37 @@ class NeedMotivationSystem(BaseModel):
             return 0.0
 
         # Calculate simple trend (average of sequential differences)
-        diffs = [intensities[i] - intensities[i-1] for i in range(1, len(intensities))]
+        diffs = [
+            intensities[i] - intensities[i - 1] for i in range(1, len(intensities))
+        ]
         return sum(diffs) / len(diffs)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization."""
         return {
-            "needs": {name: {
-                "intensity": need.intensity,
-                "satisfaction_level": need.satisfaction_level,
-                "last_update": need.last_update.isoformat(),
-            } for name, need in self.needs.items()},
+            "needs": {
+                name: {
+                    "intensity": need.intensity,
+                    "satisfaction_level": need.satisfaction_level,
+                    "last_update": need.last_update.isoformat(),
+                }
+                for name, need in self.needs.items()
+            },
             "need_priorities": self.need_priorities,
             "last_update": self.last_update.isoformat(),
         }
 
+
 class Mind:
     """Core class for the mind simulation.
-    
+
     The Mind coordinates all neural networks, manages development,
     and maintains the overall state of the artificial mind.
     """
 
     def __init__(self):
         """Initialize the mind simulation."""
-        self.networks: Dict[str, NeuralNetwork] = {}
+        self.networks: dict[str, NeuralNetwork] = {}
         self.state = MindState(
             consciousness_level=0.2,  # Start with lower consciousness (infant-like)
             emotional_state={
@@ -894,9 +1014,9 @@ class Mind:
         )
 
         # Initialize memory systems
-        self.short_term_memory: List[Memory] = []
-        self.long_term_memory: List[Memory] = []
-        self.memory_clusters: Dict[str, MemoryCluster] = {}
+        self.short_term_memory: list[Memory] = []
+        self.long_term_memory: list[Memory] = []
+        self.memory_clusters: dict[str, MemoryCluster] = {}
 
         # Initialize belief network
         self.belief_network = BeliefNetwork()
@@ -979,7 +1099,7 @@ class Mind:
 
     def register_network(self, network: NeuralNetwork) -> None:
         """Register a neural network with the mind.
-        
+
         Args:
             network: Neural network to register
 
@@ -995,9 +1115,9 @@ class Mind:
         for message in messages:
             self._process_mind_message(message)
 
-    def process_input(self, input_data: Dict[str, Any]) -> None:
+    def process_input(self, input_data: dict[str, Any]) -> None:
         """Process input data from the environment.
-        
+
         Args:
             input_data: Dictionary of input data containing sensory information
 
@@ -1009,8 +1129,12 @@ class Mind:
 
             if has_perception_data:
                 # Prepare properly sized tensors for both modalities
-                visual_data = input_data.get("visual", [0.0] * 64)  # Default to zeros if missing
-                auditory_data = input_data.get("auditory", [0.0] * 64)  # Default to zeros if missing
+                visual_data = input_data.get(
+                    "visual", [0.0] * 64
+                )  # Default to zeros if missing
+                auditory_data = input_data.get(
+                    "auditory", [0.0] * 64
+                )  # Default to zeros if missing
 
                 # Ensure proper length for visual data
                 if isinstance(visual_data, list):
@@ -1024,10 +1148,14 @@ class Mind:
                     if len(auditory_data) > 64:
                         auditory_data = auditory_data[:64]
                     elif len(auditory_data) < 64:
-                        auditory_data = auditory_data + [0.0] * (64 - len(auditory_data))
+                        auditory_data = auditory_data + [0.0] * (
+                            64 - len(auditory_data)
+                        )
 
                 # Combine into a single tensor for perception network
-                combined_data = torch.tensor(visual_data + auditory_data, dtype=torch.float32)
+                combined_data = torch.tensor(
+                    visual_data + auditory_data, dtype=torch.float32
+                )
                 self.networks["perception"].experiential_learning(combined_data)
 
         # Process language input
@@ -1043,23 +1171,30 @@ class Mind:
                 self.developmental_milestones["vocabulary_learned"].update(tokens)
 
                 # As development progresses, language processing becomes more sophisticated
-                if self.state.developmental_stage.value >= DevelopmentalStage.TODDLER.value:
+                if (
+                    self.state.developmental_stage.value
+                    >= DevelopmentalStage.TODDLER.value
+                ):
                     # Simple numeric representation of tokens
                     tensor_data = torch.zeros(len(tokens), 10)  # Simple embedding
                     for i, token in enumerate(tokens):
                         # Hash the token to get a consistent embedding
                         hash_val = hash(token) % 1000
-                        tensor_data[i] = torch.tensor([int(d) for d in f"{hash_val:010}"])
+                        tensor_data[i] = torch.tensor(
+                            [int(d) for d in f"{hash_val:010}"]
+                        )
 
                     if "language" in self.networks:
                         self.networks["language"].experiential_learning(tensor_data)
 
         # Form a memory of this input regardless of type
-        self._form_memory({
-            "type": input_data.get("type", "sensory_input"),
-            "data": input_data,
-            "time": datetime.now().isoformat(),
-        })
+        self._form_memory(
+            {
+                "type": input_data.get("type", "sensory_input"),
+                "data": input_data,
+                "time": datetime.now().isoformat(),
+            }
+        )
 
         # Increment interaction count
         self.developmental_milestones["interactions_count"] += 1
@@ -1110,7 +1245,7 @@ class Mind:
 
     def _retrieve_network_messages(self, network: NeuralNetwork) -> None:
         """Retrieve and process pending messages from a network.
-        
+
         Args:
             network: Neural network to retrieve messages from
 
@@ -1123,7 +1258,9 @@ class Mind:
                 # Convert dictionary to NetworkMessage
                 try:
                     # Extract developmental stage
-                    stage_name = message_dict.pop("developmental_stage", self.state.developmental_stage.name)
+                    stage_name = message_dict.pop(
+                        "developmental_stage", self.state.developmental_stage.name
+                    )
                     try:
                         stage = DevelopmentalStage[stage_name]
                     except KeyError:
@@ -1149,7 +1286,7 @@ class Mind:
 
     def _process_mind_message(self, message: NetworkMessage) -> None:
         """Process a message directed to the mind itself.
-        
+
         Args:
             message: Message to process
 
@@ -1163,19 +1300,23 @@ class Mind:
                         emotion_type = EmotionType(emotion_str)
                         self.state.emotional_state[emotion_type] = intensity
                         # Add to experienced emotions for developmental tracking
-                        self.developmental_milestones["emotions_experienced"].add(emotion_type)
+                        self.developmental_milestones["emotions_experienced"].add(
+                            emotion_type
+                        )
                     except ValueError:
                         logger.warning(f"Unknown emotion type: {emotion_str}")
 
                 # Form memory of significant emotions
                 if any(intensity > 0.7 for intensity in emotions.values()):
-                    self._form_memory({
-                        "type": "emotional_event",
-                        "emotions": emotions,
-                        "stimulus": message.content.get("stimulus", "unknown"),
-                        "intensity": message.content.get("intensity", 0.5),
-                        "valence": message.content.get("valence", 0.0),
-                    })
+                    self._form_memory(
+                        {
+                            "type": "emotional_event",
+                            "emotions": emotions,
+                            "stimulus": message.content.get("stimulus", "unknown"),
+                            "intensity": message.content.get("intensity", 0.5),
+                            "valence": message.content.get("valence", 0.0),
+                        }
+                    )
 
         elif message.message_type == "belief":
             # Add or update a belief
@@ -1188,7 +1329,11 @@ class Mind:
                 # Check if this is a new belief or update to existing
                 existing_belief = None
                 for belief_id, belief in self.belief_network.beliefs.items():
-                    if belief.subject == subject and belief.predicate == predicate and belief.object == obj:
+                    if (
+                        belief.subject == subject
+                        and belief.predicate == predicate
+                        and belief.object == obj
+                    ):
                         existing_belief = belief
                         break
 
@@ -1209,20 +1354,24 @@ class Mind:
 
                     # Form memory of significant new belief
                     if confidence > 0.7:
-                        self._form_memory({
-                            "type": "belief_formation",
-                            "belief": {
-                                "subject": subject,
-                                "predicate": predicate,
-                                "object": obj,
-                                "confidence": confidence,
-                            },
-                        })
+                        self._form_memory(
+                            {
+                                "type": "belief_formation",
+                                "belief": {
+                                    "subject": subject,
+                                    "predicate": predicate,
+                                    "object": obj,
+                                    "confidence": confidence,
+                                },
+                            }
+                        )
 
         elif message.message_type == "consciousness":
             # Update consciousness level
             if "level" in message.content:
-                self.state.consciousness_level = min(1.0, max(0.0, float(message.content["level"])))
+                self.state.consciousness_level = min(
+                    1.0, max(0.0, float(message.content["level"]))
+                )
 
             # Update current focus/attending
             if message.content.get("attending_to"):
@@ -1248,17 +1397,21 @@ class Mind:
 
                 # Check each need for mentions
                 for need_name, keywords in need_expressions.items():
-                    if need_name in self.need_system.needs and any(word in text.lower() for word in keywords):
+                    if need_name in self.need_system.needs and any(
+                        word in text.lower() for word in keywords
+                    ):
                         # This language output expresses a need
                         need = self.need_system.needs[need_name]
 
                         # Form memory of need expression
-                        self._form_memory({
-                            "type": "need_expression",
-                            "need": need_name,
-                            "intensity": need.intensity,
-                            "expression": text,
-                        })
+                        self._form_memory(
+                            {
+                                "type": "need_expression",
+                                "need": need_name,
+                                "intensity": need.intensity,
+                                "expression": text,
+                            }
+                        )
 
         elif message.message_type == "need":
             # Update a need
@@ -1284,9 +1437,9 @@ class Mind:
 
         self.last_need_update = current_time
 
-    def _form_memory(self, content: Dict[str, Any]) -> None:
+    def _form_memory(self, content: dict[str, Any]) -> None:
         """Form a new short-term memory.
-        
+
         Args:
             content: Memory content
 
@@ -1299,13 +1452,15 @@ class Mind:
         }
 
         # Calculate emotional valence (-1 to 1)
-        valence = sum([
-            self.state.emotional_state.get(EmotionType.JOY, 0) * 1.0,
-            self.state.emotional_state.get(EmotionType.TRUST, 0) * 0.8,
-            self.state.emotional_state.get(EmotionType.SADNESS, 0) * -0.8,
-            self.state.emotional_state.get(EmotionType.FEAR, 0) * -0.6,
-            self.state.emotional_state.get(EmotionType.ANGER, 0) * -1.0,
-        ])
+        valence = sum(
+            [
+                self.state.emotional_state.get(EmotionType.JOY, 0) * 1.0,
+                self.state.emotional_state.get(EmotionType.TRUST, 0) * 0.8,
+                self.state.emotional_state.get(EmotionType.SADNESS, 0) * -0.8,
+                self.state.emotional_state.get(EmotionType.FEAR, 0) * -0.6,
+                self.state.emotional_state.get(EmotionType.ANGER, 0) * -1.0,
+            ]
+        )
         valence = max(-1.0, min(1.0, valence))
 
         # Create memory with unique ID
@@ -1339,16 +1494,20 @@ class Mind:
         current_time = datetime.now()
 
         # Only consolidate periodically
-        if (current_time - self.last_memory_consolidation).total_seconds() < config.mind.memory_consolidation_interval:
+        if (
+            current_time - self.last_memory_consolidation
+        ).total_seconds() < config.mind.memory_consolidation_interval:
             return
 
         # Consolidate memories with enough strength or emotional significance
         memories_to_consolidate = []
         for memory in self.short_term_memory:
             # Memories with strong emotional valence or accessed multiple times are consolidated
-            if (abs(memory.emotional_valence) > 0.6 or
-                memory.strength > 1.5 or
-                (current_time - memory.creation_time).total_seconds() > 300):  # 5 minutes old
+            if (
+                abs(memory.emotional_valence) > 0.6
+                or memory.strength > 1.5
+                or (current_time - memory.creation_time).total_seconds() > 300
+            ):  # 5 minutes old
                 memories_to_consolidate.append(memory)
 
                 # Tag important memories
@@ -1410,7 +1569,7 @@ class Mind:
 
     def _cluster_memory(self, memory: Memory) -> None:
         """Cluster a memory with similar memories.
-        
+
         Args:
             memory: Memory to cluster
 
@@ -1471,11 +1630,11 @@ class Mind:
 
     def _calculate_memory_match(self, memory: Memory, cluster: MemoryCluster) -> float:
         """Calculate how well a memory matches a cluster.
-        
+
         Args:
             memory: Memory to evaluate
             cluster: Cluster to compare with
-            
+
         Returns:
             Match score (0.0 to 1.0)
 
@@ -1490,8 +1649,7 @@ class Mind:
 
         # Find these memories in long-term memory
         cluster_memories = [
-            mem for mem in self.long_term_memory
-            if mem.id in sample_memory_ids
+            mem for mem in self.long_term_memory if mem.id in sample_memory_ids
         ]
 
         if not cluster_memories:
@@ -1506,20 +1664,33 @@ class Mind:
                 match_scores.append(0.5)
 
             # For emotional events, check stimulus match
-            if memory.content.get("type") == "emotional_event" and cluster_memory.content.get("type") == "emotional_event":
+            if (
+                memory.content.get("type") == "emotional_event"
+                and cluster_memory.content.get("type") == "emotional_event"
+            ):
                 memory_stimulus = memory.content.get("stimulus", "").lower()
                 cluster_stimulus = cluster_memory.content.get("stimulus", "").lower()
 
-                if memory_stimulus and cluster_stimulus and memory_stimulus == cluster_stimulus:
+                if (
+                    memory_stimulus
+                    and cluster_stimulus
+                    and memory_stimulus == cluster_stimulus
+                ):
                     match_scores.append(0.7)
 
             # For need expressions, check need match
-            if memory.content.get("type") == "need_expression" and cluster_memory.content.get("type") == "need_expression":
+            if (
+                memory.content.get("type") == "need_expression"
+                and cluster_memory.content.get("type") == "need_expression"
+            ):
                 if memory.content.get("need") == cluster_memory.content.get("need"):
                     match_scores.append(0.8)
 
             # For beliefs, check subject/predicate match
-            if memory.content.get("type") == "belief_formation" and cluster_memory.content.get("type") == "belief_formation":
+            if (
+                memory.content.get("type") == "belief_formation"
+                and cluster_memory.content.get("type") == "belief_formation"
+            ):
                 memory_belief = memory.content.get("belief", {})
                 cluster_belief = cluster_memory.content.get("belief", {})
 
@@ -1530,7 +1701,9 @@ class Mind:
                     match_scores.append(0.3)
 
             # Emotional valence similarity
-            valence_diff = abs(memory.emotional_valence - cluster_memory.emotional_valence)
+            valence_diff = abs(
+                memory.emotional_valence - cluster_memory.emotional_valence
+            )
             if valence_diff < 0.3:
                 match_scores.append(0.4)
 
@@ -1555,7 +1728,10 @@ class Mind:
             affected_beliefs = self.belief_network.resolve_contradictions()
 
             # Form relationships between beliefs
-            if self.state.developmental_stage.value >= DevelopmentalStage.ADOLESCENT.value:
+            if (
+                self.state.developmental_stage.value
+                >= DevelopmentalStage.ADOLESCENT.value
+            ):
                 self._form_belief_relationships()
 
         self.last_belief_update = current_time
@@ -1569,7 +1745,10 @@ class Mind:
 
         # Sample some pairs to avoid excessive processing
         sample_size = min(10, len(beliefs) * (len(beliefs) - 1) // 2)
-        sampled_pairs = random.sample([(i, j) for i in range(len(beliefs)) for j in range(i+1, len(beliefs))], sample_size)
+        sampled_pairs = random.sample(
+            [(i, j) for i in range(len(beliefs)) for j in range(i + 1, len(beliefs))],
+            sample_size,
+        )
 
         for i, j in sampled_pairs:
             belief1_id, belief1 = beliefs[i]
@@ -1591,27 +1770,35 @@ class Mind:
                 relationship_strength += 0.4
 
             # Check for shared supporting memories
-            shared_memories = set(belief1.supporting_memories).intersection(set(belief2.supporting_memories))
+            shared_memories = set(belief1.supporting_memories).intersection(
+                set(belief2.supporting_memories)
+            )
             if shared_memories:
                 relationship_strength += min(0.8, len(shared_memories) * 0.2)
 
             # Detect potential contradictions
-            if (belief1.subject == belief2.subject and
-                belief1.predicate == belief2.predicate and
-                belief1.object != belief2.object):
+            if (
+                belief1.subject == belief2.subject
+                and belief1.predicate == belief2.predicate
+                and belief1.object != belief2.object
+            ):
                 # Potential contradiction - subject and predicate match but objects differ
                 self.belief_network.add_contradiction(belief1_id, belief2_id, 0.8)
 
             # Add relationship if strong enough
             if relationship_strength > 0.3:
-                self.belief_network.add_relationship(belief1_id, belief2_id, relationship_strength)
+                self.belief_network.add_relationship(
+                    belief1_id, belief2_id, relationship_strength
+                )
 
     def _check_network_growth(self) -> None:
         """Check if neural networks should grow based on development."""
         current_time = datetime.now()
 
         # Only check periodically
-        if (current_time - self.last_network_growth_check).total_seconds() < config.mind.network_growth_check_interval:
+        if (
+            current_time - self.last_network_growth_check
+        ).total_seconds() < config.mind.network_growth_check_interval:
             return
 
         # Get growth rate for current stage
@@ -1624,10 +1811,11 @@ class Mind:
         # Check for networks that need to grow
         for name, network in self.networks.items():
             # Check if eligible and time for growth
-            if (hasattr(network, "growth_eligible") and
-                network.growth_eligible and
-                random.random() < growth_rate):
-
+            if (
+                hasattr(network, "growth_eligible")
+                and network.growth_eligible
+                and random.random() < growth_rate
+            ):
                 # Get current dimensions
                 current_dims = [network.input_dim, network.output_dim]
 
@@ -1640,8 +1828,10 @@ class Mind:
                     self.networks[name] = grown_network
                     self.developmental_milestones["network_growth_events"] += 1
 
-                    logger.info(f"Network {name} grown from {current_dims} → "
-                            f"[{grown_network.input_dim}, {grown_network.output_dim}]")
+                    logger.info(
+                        f"Network {name} grown from {current_dims} → "
+                        f"[{grown_network.input_dim}, {grown_network.output_dim}]"
+                    )
 
                 except Exception as e:
                     logger.error(f"Error growing network {name}: {e!s}")
@@ -1675,12 +1865,20 @@ class Mind:
 
             # Get vocabulary size from network
             vocab_size = language_network.state.parameters.get("vocabulary_size", 0)
-            self.developmental_milestones["vocabulary_learned"] = set(list(self.developmental_milestones["vocabulary_learned"])[:vocab_size])
+            self.developmental_milestones["vocabulary_learned"] = set(
+                list(self.developmental_milestones["vocabulary_learned"])[:vocab_size]
+            )
 
             # Get language abilities from network state
-            sentence_complexity = language_network.state.parameters.get("sentence_complexity", 0.0)
-            understanding_level = language_network.state.parameters.get("understanding_level", 0.1)
-            expression_level = language_network.state.parameters.get("expression_level", 0.0)
+            sentence_complexity = language_network.state.parameters.get(
+                "sentence_complexity", 0.0
+            )
+            understanding_level = language_network.state.parameters.get(
+                "understanding_level", 0.1
+            )
+            expression_level = language_network.state.parameters.get(
+                "expression_level", 0.0
+            )
 
             self.state.language_ability = LanguageAbility(
                 vocabulary_size=vocab_size,
@@ -1693,9 +1891,18 @@ class Mind:
             vocab_size = len(self.developmental_milestones["vocabulary_learned"])
 
             # Language ability scales with developmental stage and vocabulary
-            sentence_complexity = min(1.0, (self.state.developmental_stage.value - 1) * 0.25 + (vocab_size / 1000))
-            understanding = min(1.0, (self.state.developmental_stage.value - 1) * 0.2 + (vocab_size / 800))
-            expression = min(1.0, (self.state.developmental_stage.value - 1) * 0.18 + (vocab_size / 1200))
+            sentence_complexity = min(
+                1.0,
+                (self.state.developmental_stage.value - 1) * 0.25 + (vocab_size / 1000),
+            )
+            understanding = min(
+                1.0,
+                (self.state.developmental_stage.value - 1) * 0.2 + (vocab_size / 800),
+            )
+            expression = min(
+                1.0,
+                (self.state.developmental_stage.value - 1) * 0.18 + (vocab_size / 1200),
+            )
 
             self.state.language_ability = LanguageAbility(
                 vocabulary_size=vocab_size,
@@ -1712,7 +1919,9 @@ class Mind:
         current_time = datetime.now()
 
         # Only check periodically
-        if (current_time - self.last_developmental_check).total_seconds() < config.mind.development_check_interval:
+        if (
+            current_time - self.last_developmental_check
+        ).total_seconds() < config.mind.development_check_interval:
             return
 
         # Can't progress beyond mature
@@ -1733,7 +1942,9 @@ class Mind:
             current_value = 0
 
             if metric == "emotions_experienced":
-                current_value = len(self.developmental_milestones["emotions_experienced"])
+                current_value = len(
+                    self.developmental_milestones["emotions_experienced"]
+                )
             elif metric == "vocabulary_learned":
                 current_value = len(self.developmental_milestones["vocabulary_learned"])
             elif metric in self.developmental_milestones:
@@ -1752,13 +1963,19 @@ class Mind:
         development_acceleration = config.mind.development_acceleration
         if development_acceleration > 1.0 and not all_met:
             # Calculate overall progress percentage
-            total_percentage = sum(data["percentage"] for data in milestone_progress.values()) / len(milestone_progress)
+            total_percentage = sum(
+                data["percentage"] for data in milestone_progress.values()
+            ) / len(milestone_progress)
 
             # Accelerated development has a chance to skip remaining requirements
-            advancement_probability = (total_percentage / 100) * (development_acceleration - 1.0) * 0.1
+            advancement_probability = (
+                (total_percentage / 100) * (development_acceleration - 1.0) * 0.1
+            )
 
             if random.random() < advancement_probability:
-                logger.info(f"Development acceleration triggered advancement with {total_percentage:.1f}% milestone completion")
+                logger.info(
+                    f"Development acceleration triggered advancement with {total_percentage:.1f}% milestone completion"
+                )
                 all_met = True
 
         if all_met:
@@ -1791,12 +2008,14 @@ class Mind:
             self._process_mind_message(progress_message)
 
             # Form a memory of this significant event
-            self._form_memory({
-                "type": "developmental_progress",
-                "previous_stage": DevelopmentalStage(next_stage_value - 1).name,
-                "new_stage": next_stage.name,
-                "milestones": milestone_progress,
-            })
+            self._form_memory(
+                {
+                    "type": "developmental_progress",
+                    "previous_stage": DevelopmentalStage(next_stage_value - 1).name,
+                    "new_stage": next_stage.name,
+                    "milestones": milestone_progress,
+                }
+            )
 
         self.last_developmental_check = current_time
 
@@ -1807,28 +2026,41 @@ class Mind:
             return
 
         # Self-reflection increases with self-awareness and developmental stage
-        reflection_depth = self.self_awareness_level * 0.2 * self.state.developmental_stage.value
+        reflection_depth = (
+            self.self_awareness_level * 0.2 * self.state.developmental_stage.value
+        )
 
         # Update performance metrics
         # Memory utilization - ratio of long-term to short-term memory
         if self.short_term_memory:
-            ltm_ratio = len(self.long_term_memory) / (len(self.short_term_memory) + len(self.long_term_memory))
+            ltm_ratio = len(self.long_term_memory) / (
+                len(self.short_term_memory) + len(self.long_term_memory)
+            )
             self.performance_metrics["memory_utilization"] = ltm_ratio
 
         # Belief consistency - inverse of contradiction ratio
         total_beliefs = len(self.belief_network.beliefs)
         if total_beliefs > 1:
-            contradiction_ratio = len(self.belief_network.contradictions) / (total_beliefs * (total_beliefs - 1) / 2)
-            self.performance_metrics["belief_consistency"] = 1.0 - min(1.0, contradiction_ratio * 5)
+            contradiction_ratio = len(self.belief_network.contradictions) / (
+                total_beliefs * (total_beliefs - 1) / 2
+            )
+            self.performance_metrics["belief_consistency"] = 1.0 - min(
+                1.0, contradiction_ratio * 5
+            )
 
         # Need balance - inverse of variation in need intensities
         need_intensities = [need.intensity for need in self.need_system.needs.values()]
         if need_intensities:
-            need_variance = np.var(need_intensities) if len(need_intensities) > 1 else 0.0
+            need_variance = (
+                np.var(need_intensities) if len(need_intensities) > 1 else 0.0
+            )
             self.performance_metrics["need_balance"] = 1.0 - min(1.0, need_variance * 3)
 
         # Apply insights from self-reflection at higher development stages
-        if reflection_depth > 0.5 and self.state.developmental_stage.value >= DevelopmentalStage.CHILD.value:
+        if (
+            reflection_depth > 0.5
+            and self.state.developmental_stage.value >= DevelopmentalStage.CHILD.value
+        ):
             # If poor memory utilization, boost memory consolidation
             if self.performance_metrics["memory_utilization"] < 0.3:
                 # Trigger extra memory consolidation
@@ -1841,14 +2073,16 @@ class Mind:
             # If poor need balance, adjust need priorities
             if self.performance_metrics["need_balance"] < 0.3:
                 # Find most intense need
-                most_intense = max(self.need_system.needs.items(), key=lambda x: x[1].intensity)
+                most_intense = max(
+                    self.need_system.needs.items(), key=lambda x: x[1].intensity
+                )
 
                 # Satisfy it slightly to maintain balance
                 self.need_system.satisfy_need(most_intense[0], 0.1)
 
     def get_state(self) -> MindState:
         """Get the current state of the mind.
-        
+
         Returns:
             Current mind state
 
@@ -1857,22 +2091,24 @@ class Mind:
 
     def get_observable_state(self) -> ObservableState:
         """Get the observable state of the mind.
-        
+
         Creates a representation of what would be externally observable
         about the mind's state, rather than its internal state.
-        
+
         Returns:
             Observable state
 
         """
         # Calculate apparent mood from emotional state
-        apparent_mood = sum([
-            self.state.emotional_state.get(EmotionType.JOY, 0) * 1.0,
-            self.state.emotional_state.get(EmotionType.TRUST, 0) * 0.8,
-            self.state.emotional_state.get(EmotionType.SADNESS, 0) * -0.8,
-            self.state.emotional_state.get(EmotionType.FEAR, 0) * -0.6,
-            self.state.emotional_state.get(EmotionType.ANGER, 0) * -1.0,
-        ])
+        apparent_mood = sum(
+            [
+                self.state.emotional_state.get(EmotionType.JOY, 0) * 1.0,
+                self.state.emotional_state.get(EmotionType.TRUST, 0) * 0.8,
+                self.state.emotional_state.get(EmotionType.SADNESS, 0) * -0.8,
+                self.state.emotional_state.get(EmotionType.FEAR, 0) * -0.6,
+                self.state.emotional_state.get(EmotionType.ANGER, 0) * -1.0,
+            ]
+        )
 
         # Clamp apparent mood to [-1, 1]
         apparent_mood = max(-1.0, min(1.0, apparent_mood))
@@ -1903,7 +2139,7 @@ class Mind:
 
     def _generate_age_appropriate_vocalization(self) -> str:
         """Generate an age-appropriate vocalization based on developmental stage.
-        
+
         Returns:
             Age-appropriate vocalization
 
@@ -1911,11 +2147,13 @@ class Mind:
         # If we have a language network, use it
         if "language" in self.networks:
             # Get the most recent output from language network
-            recent_utterances = self.networks["language"].state.parameters.get("recent_utterances", [])
+            recent_utterances = self.networks["language"].state.parameters.get(
+                "recent_utterances", []
+            )
             if recent_utterances:
                 # Get most recent utterance
                 latest = recent_utterances[-1]
-                return f"{latest.get('type', 'says')} \"{latest.get('text', '')}\""
+                return f'{latest.get("type", "says")} "{latest.get("text", "")}"'
 
         # Fall back to default vocalizations if no language network or no recent utterances
         if self.state.developmental_stage == DevelopmentalStage.INFANT:
@@ -1969,9 +2207,9 @@ class Mind:
         # MATURE
         return "communicates fluently"
 
-    def _get_age_appropriate_behaviors(self) -> List[str]:
+    def _get_age_appropriate_behaviors(self) -> list[str]:
         """Get a list of age-appropriate behaviors for the current developmental stage.
-        
+
         Returns:
             List of behavior descriptions
 
@@ -2047,12 +2285,12 @@ class Mind:
 
         return behaviors
 
-    def get_memory_by_id(self, memory_id: str) -> Optional[Memory]:
+    def get_memory_by_id(self, memory_id: str) -> Memory | None:
         """Get a memory by its ID.
-        
+
         Args:
             memory_id: ID of the memory to retrieve
-            
+
         Returns:
             Memory object or None if not found
 
@@ -2071,12 +2309,12 @@ class Mind:
 
         return None
 
-    def get_memories_by_tag(self, tag: str) -> List[Memory]:
+    def get_memories_by_tag(self, tag: str) -> list[Memory]:
         """Get memories with a specific tag.
-        
+
         Args:
             tag: Tag to search for
-            
+
         Returns:
             List of matching memories
 
@@ -2097,12 +2335,12 @@ class Mind:
 
         return matching_memories
 
-    def search_memories(self, query: Dict[str, Any]) -> List[Memory]:
+    def search_memories(self, query: dict[str, Any]) -> list[Memory]:
         """Search memories based on content criteria.
-        
+
         Args:
             query: Dictionary of search criteria
-            
+
         Returns:
             List of matching memories
 
@@ -2159,32 +2397,36 @@ class Mind:
 
         return matching_memories
 
-    def get_belief_by_statement(self, subject: str, predicate: str, object: str) -> Optional[Belief]:
+    def get_belief_by_statement(
+        self, subject: str, predicate: str, object: str
+    ) -> Belief | None:
         """Get a belief by its statement components.
-        
+
         Args:
             subject: Subject of the belief
             predicate: Predicate of the belief
             object: Object of the belief
-            
+
         Returns:
             Matching belief or None if not found
 
         """
         for belief_id, belief in self.belief_network.beliefs.items():
-            if (belief.subject == subject and
-                belief.predicate == predicate and
-                belief.object == object):
+            if (
+                belief.subject == subject
+                and belief.predicate == predicate
+                and belief.object == object
+            ):
                 return belief
 
         return None
 
-    def get_beliefs_about(self, subject: str) -> List[Belief]:
+    def get_beliefs_about(self, subject: str) -> list[Belief]:
         """Get all beliefs about a specific subject.
-        
+
         Args:
             subject: Subject to search for
-            
+
         Returns:
             List of beliefs about the subject
 
@@ -2197,12 +2439,12 @@ class Mind:
 
         return matching_beliefs
 
-    def get_related_beliefs(self, belief_id: str) -> List[Tuple[Belief, float]]:
+    def get_related_beliefs(self, belief_id: str) -> list[tuple[Belief, float]]:
         """Get beliefs related to a specific belief.
-        
+
         Args:
             belief_id: ID of the belief to get relations for
-            
+
         Returns:
             List of tuples containing (related_belief, relationship_strength)
 
@@ -2218,26 +2460,30 @@ class Mind:
         # Get actual belief objects
         for related_id, strength in relationships:
             if related_id in self.belief_network.beliefs:
-                related_beliefs.append((self.belief_network.beliefs[related_id], strength))
+                related_beliefs.append(
+                    (self.belief_network.beliefs[related_id], strength)
+                )
 
         return related_beliefs
 
-    def get_performance_metrics(self) -> Dict[str, float]:
+    def get_performance_metrics(self) -> dict[str, float]:
         """Get current performance metrics of the mind.
-        
+
         Returns:
             Dictionary of performance metrics
 
         """
         return self.performance_metrics
 
-    def save_state(self, directory: str = "saved_models", format: str = "pytorch") -> bool:
+    def save_state(
+        self, directory: str = "saved_models", format: str = "pytorch"
+    ) -> bool:
         """Save the current state of the mind and all networks.
-        
+
         Args:
             directory: Directory to save models
             format: Model save format ("pytorch", "torchscript", "onnx")
-            
+
         Returns:
             True if saved successfully, False otherwise
 
@@ -2254,7 +2500,9 @@ class Mind:
             mind_state = {
                 "developmental_stage": self.state.developmental_stage.value,
                 "consciousness_level": self.state.consciousness_level,
-                "emotional_state": {k.value: v for k, v in self.state.emotional_state.items()},
+                "emotional_state": {
+                    k.value: v for k, v in self.state.emotional_state.items()
+                },
                 "energy_level": self.state.energy_level,
                 "simulation_time": self.simulation_time,
                 "developmental_milestones": {
@@ -2278,16 +2526,31 @@ class Mind:
             def memory_to_dict(memory):
                 memory_dict = memory.dict()
                 # Convert datetime objects to ISO format strings
-                if "creation_time" in memory_dict and isinstance(memory_dict["creation_time"], datetime):
-                    memory_dict["creation_time"] = memory_dict["creation_time"].isoformat()
-                if "last_access_time" in memory_dict and isinstance(memory_dict["last_access_time"], datetime):
-                    memory_dict["last_access_time"] = memory_dict["last_access_time"].isoformat()
+                if "creation_time" in memory_dict and isinstance(
+                    memory_dict["creation_time"], datetime
+                ):
+                    memory_dict["creation_time"] = memory_dict[
+                        "creation_time"
+                    ].isoformat()
+                if "last_access_time" in memory_dict and isinstance(
+                    memory_dict["last_access_time"], datetime
+                ):
+                    memory_dict["last_access_time"] = memory_dict[
+                        "last_access_time"
+                    ].isoformat()
                 return memory_dict
 
             memories_data = {
-                "short_term": [memory_to_dict(memory) for memory in self.short_term_memory],
-                "long_term": [memory_to_dict(memory) for memory in self.long_term_memory],
-                "clusters": {cluster_id: cluster.to_dict() for cluster_id, cluster in self.memory_clusters.items()},
+                "short_term": [
+                    memory_to_dict(memory) for memory in self.short_term_memory
+                ],
+                "long_term": [
+                    memory_to_dict(memory) for memory in self.long_term_memory
+                ],
+                "clusters": {
+                    cluster_id: cluster.to_dict()
+                    for cluster_id, cluster in self.memory_clusters.items()
+                },
             }
 
             with open(os.path.join(directory, "memories.json"), "w") as f:
@@ -2312,12 +2575,14 @@ class Mind:
             logger.error(f"Error saving mind state: {e!s}")
             return False
 
-    def load_state(self, directory: str = "saved_models", format: str = "pytorch") -> None:
+    def load_state(
+        self, directory: str = "saved_models", format: str = "pytorch"
+    ) -> None:
         """Load the mind state and all networks from disk.
-        
+
         Args:
             directory: Directory to load models from
-            
+
         Returns:
             True if loaded successfully, False otherwise
 
@@ -2335,14 +2600,17 @@ class Mind:
 
                 # Restore core state attributes
                 if "developmental_stage" in mind_state:
-                    self.state.developmental_stage = DevelopmentalStage(mind_state["developmental_stage"])
+                    self.state.developmental_stage = DevelopmentalStage(
+                        mind_state["developmental_stage"]
+                    )
 
                 if "consciousness_level" in mind_state:
                     self.state.consciousness_level = mind_state["consciousness_level"]
 
                 if "emotional_state" in mind_state:
                     self.state.emotional_state = {
-                        EmotionType(k): v for k, v in mind_state["emotional_state"].items()
+                        EmotionType(k): v
+                        for k, v in mind_state["emotional_state"].items()
                     }
 
                 if "energy_level" in mind_state:
@@ -2352,17 +2620,23 @@ class Mind:
                     self.simulation_time = mind_state["simulation_time"]
 
                 if "developmental_milestones" in mind_state:
-                    self.developmental_milestones = mind_state["developmental_milestones"]
+                    self.developmental_milestones = mind_state[
+                        "developmental_milestones"
+                    ]
 
                     # Convert sets from lists
                     if "emotions_experienced" in self.developmental_milestones:
                         emotions = []
-                        for emotion_str in self.developmental_milestones["emotions_experienced"]:
+                        for emotion_str in self.developmental_milestones[
+                            "emotions_experienced"
+                        ]:
                             try:
                                 emotions.append(EmotionType(emotion_str))
                             except ValueError:
                                 pass
-                        self.developmental_milestones["emotions_experienced"] = set(emotions)
+                        self.developmental_milestones["emotions_experienced"] = set(
+                            emotions
+                        )
 
                     if "vocabulary_learned" in self.developmental_milestones:
                         self.developmental_milestones["vocabulary_learned"] = set(
@@ -2395,8 +2669,12 @@ class Mind:
                         stage = DevelopmentalStage[stage_name]
 
                         # Convert timestamps
-                        creation_time = datetime.fromisoformat(memory_dict.pop("creation_time"))
-                        last_access_time = datetime.fromisoformat(memory_dict.pop("last_access_time"))
+                        creation_time = datetime.fromisoformat(
+                            memory_dict.pop("creation_time")
+                        )
+                        last_access_time = datetime.fromisoformat(
+                            memory_dict.pop("last_access_time")
+                        )
 
                         memory = Memory(
                             developmental_stage=stage,
@@ -2417,8 +2695,12 @@ class Mind:
                         stage = DevelopmentalStage[stage_name]
 
                         # Convert timestamps
-                        creation_time = datetime.fromisoformat(memory_dict.pop("creation_time"))
-                        last_access_time = datetime.fromisoformat(memory_dict.pop("last_access_time"))
+                        creation_time = datetime.fromisoformat(
+                            memory_dict.pop("creation_time")
+                        )
+                        last_access_time = datetime.fromisoformat(
+                            memory_dict.pop("last_access_time")
+                        )
 
                         memory = Memory(
                             developmental_stage=stage,
@@ -2432,15 +2714,21 @@ class Mind:
 
                 # Restore memory clusters
                 self.memory_clusters = {}
-                for cluster_id, cluster_dict in memories_data.get("clusters", {}).items():
+                for cluster_id, cluster_dict in memories_data.get(
+                    "clusters", {}
+                ).items():
                     try:
                         # Convert stage name to enum
                         stage_name = cluster_dict.pop("developmental_stage", "INFANT")
                         stage = DevelopmentalStage[stage_name]
 
                         # Convert timestamps
-                        creation_time = datetime.fromisoformat(cluster_dict.pop("creation_time"))
-                        last_access_time = datetime.fromisoformat(cluster_dict.pop("last_access_time"))
+                        creation_time = datetime.fromisoformat(
+                            cluster_dict.pop("creation_time")
+                        )
+                        last_access_time = datetime.fromisoformat(
+                            cluster_dict.pop("last_access_time")
+                        )
 
                         cluster = MemoryCluster(
                             id=cluster_id,
@@ -2472,7 +2760,9 @@ class Mind:
                     self.need_system.needs = {}
                     for name, need_dict in need_data["needs"].items():
                         try:
-                            last_update = datetime.fromisoformat(need_dict.pop("last_update"))
+                            last_update = datetime.fromisoformat(
+                                need_dict.pop("last_update")
+                            )
                             self.need_system.needs[name] = Need(
                                 name=name,
                                 last_update=last_update,

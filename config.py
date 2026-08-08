@@ -7,7 +7,7 @@ for loading/saving configuration from YAML files.
 import json
 import logging
 import os
-from typing import Any, Dict, Optional
+from typing import Any
 
 import yaml
 from pydantic import BaseModel, Field, model_validator
@@ -15,12 +15,14 @@ from pydantic import BaseModel, Field, model_validator
 # Configure logging
 logger = logging.getLogger(__name__)
 
+
 class ServerConfig(BaseModel):
     """Configuration for external servers."""
 
     llm_server_url: str = "http://localhost:1234/v1/chat/completions"
     embedding_server_url: str = "http://localhost:1234/v1/embeddings"
-    obsidian_api_url: Optional[str] = None
+    obsidian_api_url: str | None = None
+
 
 class ModelConfig(BaseModel):
     """Configuration for models."""
@@ -29,6 +31,7 @@ class ModelConfig(BaseModel):
     embedding_model: str = "all-MiniLM-L6-v2"
     temperature: float = Field(default=0.7, ge=0.0, le=2.0)
     max_tokens: int = -1  # -1 for unlimited
+
 
 class VisualizationConfig(BaseModel):
     """Configuration for visualization."""
@@ -39,22 +42,27 @@ class VisualizationConfig(BaseModel):
     graph_enabled: bool = True
 
     # UI color scheme
-    colors: Dict[str, str] = Field(default_factory=lambda: {
-        "background": "#f0f0f0",
-        "text": "#333333",
-        "highlight": "#3498db",
-        "secondary": "#e74c3c",
-        "tertiary": "#2ecc71",
-    })
+    colors: dict[str, str] = Field(
+        default_factory=lambda: {
+            "background": "#f0f0f0",
+            "text": "#333333",
+            "highlight": "#3498db",
+            "secondary": "#e74c3c",
+            "tertiary": "#2ecc71",
+        }
+    )
 
     # Network visualization settings
-    network_display: Dict[str, bool] = Field(default_factory=lambda: {
-        "consciousness": True,
-        "emotions": True,
-        "perception": True,
-        "thoughts": True,
-        "language": True,
-    })
+    network_display: dict[str, bool] = Field(
+        default_factory=lambda: {
+            "consciousness": True,
+            "emotions": True,
+            "perception": True,
+            "thoughts": True,
+            "language": True,
+        }
+    )
+
 
 class MindConfig(BaseModel):
     """Configuration for the mind simulation."""
@@ -64,16 +72,20 @@ class MindConfig(BaseModel):
     need_update_interval: float = Field(default=5.0, ge=0.1)  # seconds
     memory_consolidation_interval: float = Field(default=30.0, ge=1.0)  # seconds
     development_check_interval: float = Field(default=60.0, ge=5.0)  # seconds
-    network_growth_check_interval: float = Field(default=120.0, ge=10.0)  # seconds - add this line!
+    network_growth_check_interval: float = Field(
+        default=120.0, ge=10.0
+    )  # seconds - add this line!
 
     # Network configuration
-    networks: Dict[str, Dict[str, Any]] = Field(default_factory=lambda: {
-        "consciousness": {"hidden_dim": 128, "input_dim": 64, "output_dim": 64},
-        "emotions": {"hidden_dim": 64, "input_dim": 32, "output_dim": 32},
-        "perception": {"hidden_dim": 256, "input_dim": 128, "output_dim": 64},
-        "thoughts": {"hidden_dim": 128, "input_dim": 64, "output_dim": 64},
-        "language": {"hidden_dim": 192, "input_dim": 96, "output_dim": 48},
-    })
+    networks: dict[str, dict[str, Any]] = Field(
+        default_factory=lambda: {
+            "consciousness": {"hidden_dim": 128, "input_dim": 64, "output_dim": 64},
+            "emotions": {"hidden_dim": 64, "input_dim": 32, "output_dim": 32},
+            "perception": {"hidden_dim": 256, "input_dim": 128, "output_dim": 64},
+            "thoughts": {"hidden_dim": 128, "input_dim": 64, "output_dim": 64},
+            "language": {"hidden_dim": 192, "input_dim": 96, "output_dim": 48},
+        }
+    )
 
     # Developmental acceleration factor (1.0 = normal speed, >1.0 = faster)
     development_acceleration: float = Field(default=1.0, ge=0.1, le=10.0)
@@ -82,13 +94,16 @@ class MindConfig(BaseModel):
     starting_stage: str = "INFANT"
 
     # Enable/disable specific simulation features
-    features_enabled: Dict[str, bool] = Field(default_factory=lambda: {
-        "memory_consolidation": True,
-        "emotional_development": True,
-        "belief_formation": True,
-        "language_acquisition": True,
-        "need_simulation": True,
-    })
+    features_enabled: dict[str, bool] = Field(
+        default_factory=lambda: {
+            "memory_consolidation": True,
+            "emotional_development": True,
+            "belief_formation": True,
+            "language_acquisition": True,
+            "need_simulation": True,
+        }
+    )
+
 
 class LoggingConfig(BaseModel):
     """Configuration for logging."""
@@ -108,6 +123,7 @@ class LoggingConfig(BaseModel):
             self.level = "INFO"
         return self
 
+
 class DevelopmentConfig(BaseModel):
     """Configuration for development features."""
 
@@ -118,7 +134,8 @@ class DevelopmentConfig(BaseModel):
     record_metrics: bool = True
 
     # Developer settings for experimentation
-    experimental_features: Dict[str, bool] = Field(default_factory=dict)
+    experimental_features: dict[str, bool] = Field(default_factory=dict)
+
 
 class Config(BaseModel):
     """Main configuration for the NeuralChild project."""
@@ -133,10 +150,10 @@ class Config(BaseModel):
     @classmethod
     def from_yaml(cls, path: str) -> "Config":
         """Load configuration from a YAML file.
-        
+
         Args:
             path: Path to the YAML file
-            
+
         Returns:
             Loaded configuration
 
@@ -162,7 +179,7 @@ class Config(BaseModel):
 
     def to_yaml(self, path: str) -> None:
         """Save configuration to a YAML file.
-        
+
         Args:
             path: Path to save the YAML file
 
@@ -180,7 +197,7 @@ class Config(BaseModel):
 
     def to_json(self, path: str) -> None:
         """Save configuration to a JSON file.
-        
+
         Args:
             path: Path to save the JSON file
 
@@ -231,15 +248,17 @@ class Config(BaseModel):
 
         logger.info(f"Logging configured at {self.logging.level} level")
 
+
 # Global configuration instance
 config = Config()
 
+
 def load_config(path: str = "config.yaml") -> Config:
     """Load configuration from a YAML file.
-    
+
     Args:
         path: Path to the configuration file
-        
+
     Returns:
         Loaded configuration
 
@@ -252,9 +271,10 @@ def load_config(path: str = "config.yaml") -> Config:
 
     return config
 
+
 def get_config() -> Config:
     """Get the current configuration.
-    
+
     Returns:
         Current configuration
 

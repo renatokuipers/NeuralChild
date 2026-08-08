@@ -8,7 +8,7 @@ import json
 import logging
 import random
 import time
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 import requests
 
@@ -18,6 +18,7 @@ from config import config
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 class LLMError(Exception):
     """Exception raised for errors in the LLM module."""
 
@@ -25,14 +26,14 @@ class LLMError(Exception):
 def chat_completion(
     system_prompt: str,
     user_prompt: str,
-    temperature: Optional[float] = None,
-    max_tokens: Optional[int] = None,
+    temperature: float | None = None,
+    max_tokens: int | None = None,
     structured_output: bool = False,
     retry_count: int = 3,
     retry_delay: float = 2.0,
-) -> Optional[Union[str, Dict[str, Any]]]:
+) -> str | dict[str, Any] | None:
     """Generate a completion using the configured LLM service.
-    
+
     Args:
         system_prompt: System prompt for the LLM
         user_prompt: User prompt content
@@ -41,7 +42,7 @@ def chat_completion(
         structured_output: Whether to return structured JSON
         retry_count: Number of retries on failure
         retry_delay: Delay between retries
-        
+
     Returns:
         Generated text or structured data, or None if generation fails
 
@@ -61,10 +62,14 @@ def chat_completion(
 
     # Add structured output instructions if needed
     if structured_output:
-        system_prompt += "\n\nProvide your response in JSON format with the following structure:\n"
-        system_prompt += '{\n  "understanding": "your interpretation of the situation",\n'
+        system_prompt += (
+            "\n\nProvide your response in JSON format with the following structure:\n"
+        )
+        system_prompt += (
+            '{\n  "understanding": "your interpretation of the situation",\n'
+        )
         system_prompt += '  "response": "your nurturing response to the child",\n'
-        system_prompt += "  \"action\": \"specific action you're taking (comfort, teach, play, etc.)\"\n}"
+        system_prompt += '  "action": "specific action you\'re taking (comfort, teach, play, etc.)"\n}'
 
     # Construct the API request body
     payload = {
@@ -139,10 +144,14 @@ def chat_completion(
                 logger.error(f"No choices in LLM response: {response_data}")
 
         except requests.exceptions.RequestException as e:
-            logger.error(f"LLM API request failed (attempt {attempt+1}/{retry_count}): {e!s}")
+            logger.error(
+                f"LLM API request failed (attempt {attempt + 1}/{retry_count}): {e!s}"
+            )
 
         except Exception as e:
-            logger.error(f"Unexpected error in LLM request (attempt {attempt+1}/{retry_count}): {e!s}")
+            logger.error(
+                f"Unexpected error in LLM request (attempt {attempt + 1}/{retry_count}): {e!s}"
+            )
 
         # Delay before retry, with jitter to avoid thundering herd
         if attempt < retry_count - 1:
@@ -155,18 +164,19 @@ def chat_completion(
     # Return None on failure
     return None
 
+
 def get_embeddings(
-    texts: List[str],
+    texts: list[str],
     retry_count: int = 3,
     retry_delay: float = 2.0,
-) -> Optional[List[List[float]]]:
+) -> list[list[float]] | None:
     """Generate embeddings for the given texts.
-    
+
     Args:
         texts: List of texts to embed
         retry_count: Number of retries on failure
         retry_delay: Delay between retries
-        
+
     Returns:
         List of embedding vectors or None if embedding fails
 
@@ -204,10 +214,14 @@ def get_embeddings(
             logger.error(f"No data in embedding response: {response_data}")
 
         except requests.exceptions.RequestException as e:
-            logger.error(f"Embedding API request failed (attempt {attempt+1}/{retry_count}): {e!s}")
+            logger.error(
+                f"Embedding API request failed (attempt {attempt + 1}/{retry_count}): {e!s}"
+            )
 
         except Exception as e:
-            logger.error(f"Unexpected error in embedding request (attempt {attempt+1}/{retry_count}): {e!s}")
+            logger.error(
+                f"Unexpected error in embedding request (attempt {attempt + 1}/{retry_count}): {e!s}"
+            )
 
         # Delay before retry, with jitter to avoid thundering herd
         if attempt < retry_count - 1:
@@ -220,21 +234,22 @@ def get_embeddings(
     # Return None on failure
     return None
 
+
 def simulate_llm_response(
     system_prompt: str,
     user_prompt: str,
     structured_output: bool = False,
-) -> Optional[Union[str, Dict[str, Any]]]:
+) -> str | dict[str, Any] | None:
     """Simulate an LLM response for testing/offline use.
-    
+
     This function should only be used when the real LLM service is unavailable
     and is intended as a fallback for development and testing.
-    
+
     Args:
         system_prompt: System prompt for the LLM
         user_prompt: User prompt content
         structured_output: Whether to return structured JSON
-        
+
     Returns:
         Simulated response text or structured data
 
@@ -242,7 +257,9 @@ def simulate_llm_response(
     logger.warning("Using simulated LLM response - only for development/testing!")
 
     # Determine whether this is a mother response based on keywords
-    is_mother = "mother" in system_prompt.lower() or "nurturing" in system_prompt.lower()
+    is_mother = (
+        "mother" in system_prompt.lower() or "nurturing" in system_prompt.lower()
+    )
 
     if structured_output and is_mother:
         # Generate a simulated structured mother response

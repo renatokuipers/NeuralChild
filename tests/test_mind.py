@@ -57,7 +57,10 @@ def test_belief_network_indexes_evidence_and_relations_under_the_same_identity()
     """The evidence index and the relationship table are keyed by the belief's own id."""
     network = BeliefNetwork()
     belief = Belief(
-        subject="ball", predicate="is", object="red", supporting_memories=["mem-1"],
+        subject="ball",
+        predicate="is",
+        object="red",
+        supporting_memories=["mem-1"],
     )
     belief_id = network.add_belief(belief)
     assert network.evidence_index["mem-1"] == [belief_id]
@@ -135,7 +138,10 @@ def test_save_state_writes_a_checkpoint_that_loads_back(mind, checkpoint_dir):
     for index in range(3):
         mind.process_input(sensory_input(index))
     mind.belief_network.beliefs["belief-1"] = Belief(
-        subject="ball", predicate="is", object="red", confidence=0.6,
+        subject="ball",
+        predicate="is",
+        object="red",
+        confidence=0.6,
     )
     memories_before = mind.developmental_milestones["memories_formed"]
 

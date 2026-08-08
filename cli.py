@@ -11,7 +11,6 @@ import os
 import signal
 import time
 from datetime import datetime
-from typing import Optional
 
 from config import Config, get_config, load_config
 from core.schemas import DevelopmentalStage
@@ -26,6 +25,7 @@ from mother.mother_llm import MotherLLM
 try:
     import colorama
     from colorama import Back, Fore, Style
+
     colorama.init()
     COLORAMA_AVAILABLE = True
 except ImportError:
@@ -37,9 +37,10 @@ logger = logging.getLogger(__name__)
 # State to track whether simulation should continue running
 running = True
 
+
 def signal_handler(sig, frame):
     """Handle interruption signals.
-    
+
     Args:
         sig: Signal number
         frame: Current stack frame
@@ -49,19 +50,21 @@ def signal_handler(sig, frame):
     print("\nReceived signal to stop simulation. Shutting down gracefully...")
     running = False
 
+
 def setup_signal_handlers():
     """Set up signal handlers for graceful shutdown."""
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
 
+
 def colored_text(text: str, color: str = None, style: str = None) -> str:
     """Format text with color and style if colorama is available.
-    
+
     Args:
         text: Text to format
         color: Color name (RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE)
         style: Style name (BRIGHT, DIM, NORMAL)
-        
+
     Returns:
         Formatted text
 
@@ -96,14 +99,15 @@ def colored_text(text: str, color: str = None, style: str = None) -> str:
     result += text + Style.RESET_ALL
     return result
 
+
 def display_simulation_state(
     mind: Mind,
     mother: MotherLLM,
     iteration: int,
-    last_response: Optional[str] = None,
+    last_response: str | None = None,
 ):
     """Display the current state of the simulation.
-    
+
     Args:
         mind: Mind object
         mother: MotherLLM object
@@ -123,7 +127,11 @@ def display_simulation_state(
 
     # Display header
     stage_name = observable.developmental_stage.name
-    print(colored_text(f"=== NEURAL CHILD SIMULATION (Iteration {iteration}) ===", "CYAN", "BRIGHT"))
+    print(
+        colored_text(
+            f"=== NEURAL CHILD SIMULATION (Iteration {iteration}) ===", "CYAN", "BRIGHT"
+        )
+    )
     print(colored_text(f"Developmental Stage: {stage_name}", "YELLOW", "BRIGHT"))
 
     # Display mind state
@@ -156,7 +164,11 @@ def display_simulation_state(
         focused_network = mind.networks[observable.current_focus]
         text_output = focused_network.generate_text_output()
 
-        print(colored_text(f"\n=== FOCUSED NETWORK: {observable.current_focus.upper()} ===", "CYAN"))
+        print(
+            colored_text(
+                f"\n=== FOCUSED NETWORK: {observable.current_focus.upper()} ===", "CYAN"
+            )
+        )
         print(text_output.text)
 
     # Display mother's last response
@@ -167,9 +179,10 @@ def display_simulation_state(
     # Display prompt for user
     print(colored_text("\nPress Ctrl+C to stop simulation", "WHITE", "DIM"))
 
+
 def initialize_networks(mind: Mind, config: Config):
     """Initialize and register neural networks with the mind.
-    
+
     Args:
         mind: Mind object to register networks with
         config: Configuration object
@@ -225,11 +238,14 @@ def initialize_networks(mind: Mind, config: Config):
 
             logger.info(f"Set starting developmental stage to {starting_stage.name}")
         except KeyError:
-            logger.warning(f"Invalid starting stage: {config.mind.starting_stage}, using INFANT")
+            logger.warning(
+                f"Invalid starting stage: {config.mind.starting_stage}, using INFANT"
+            )
 
-def run(config_path: Optional[str] = None) -> None:
+
+def run(config_path: str | None = None) -> None:
     """Run the NeuralChild simulation.
-    
+
     Args:
         config_path: Path to the configuration file
 
@@ -299,7 +315,11 @@ def run(config_path: Optional[str] = None) -> None:
                 time.sleep(wait_time)
 
     except KeyboardInterrupt:
-        print(colored_text("\nInterrupted by user. Stopping NeuralChild simulation...", "YELLOW"))
+        print(
+            colored_text(
+                "\nInterrupted by user. Stopping NeuralChild simulation...", "YELLOW"
+            )
+        )
 
     except Exception as e:
         logger.error(f"Error in simulation: {e!s}", exc_info=True)
@@ -335,24 +355,42 @@ def run(config_path: Optional[str] = None) -> None:
                 logger.error(f"Failed to save metrics: {e!s}")
 
         print(colored_text("\nNeuralChild simulation stopped.", "CYAN"))
-        print(f"Simulation ran for {simulation_duration:.2f} seconds ({iteration} iterations)")
+        print(
+            f"Simulation ran for {simulation_duration:.2f} seconds ({iteration} iterations)"
+        )
         print(f"Final developmental stage: {mind.state.developmental_stage.name}")
+
 
 def main() -> None:
     """Entry point for the command-line interface."""
-    parser = argparse.ArgumentParser(description="NeuralChild: A psychological brain simulation")
-    parser.add_argument("--config", "-c", type=str, help="Path to the configuration file")
+    parser = argparse.ArgumentParser(
+        description="NeuralChild: A psychological brain simulation"
+    )
+    parser.add_argument(
+        "--config", "-c", type=str, help="Path to the configuration file"
+    )
     parser.add_argument("--debug", "-d", action="store_true", help="Enable debug mode")
-    parser.add_argument("--visualize", "-v", action="store_true", help="Enable visualization")
-    parser.add_argument("--simulate-llm", "-s", action="store_true", help="Use simulated LLM responses")
-    parser.add_argument("--stage", "-S", type=str, choices=["INFANT", "TODDLER", "CHILD", "ADOLESCENT", "MATURE"],
-                      help="Starting developmental stage")
+    parser.add_argument(
+        "--visualize", "-v", action="store_true", help="Enable visualization"
+    )
+    parser.add_argument(
+        "--simulate-llm", "-s", action="store_true", help="Use simulated LLM responses"
+    )
+    parser.add_argument(
+        "--stage",
+        "-S",
+        type=str,
+        choices=["INFANT", "TODDLER", "CHILD", "ADOLESCENT", "MATURE"],
+        help="Starting developmental stage",
+    )
 
     args = parser.parse_args()
 
     # Check for required colorama package
     if not COLORAMA_AVAILABLE:
-        print("WARNING: colorama package not found. Install with 'pip install colorama' for better formatting.")
+        print(
+            "WARNING: colorama package not found. Install with 'pip install colorama' for better formatting."
+        )
 
     # Apply command-line overrides to config
     temp_config = load_config(args.config) if args.config else load_config()
@@ -382,6 +420,7 @@ def main() -> None:
         # Clean up temporary config file
         if os.path.exists(temp_config_path):
             os.remove(temp_config_path)
+
 
 if __name__ == "__main__":
     main()

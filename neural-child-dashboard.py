@@ -5,7 +5,7 @@ import sys
 import threading
 import time
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import dash
 import dash_bootstrap_components as dbc
@@ -32,15 +32,16 @@ from mother.mother_llm import MotherLLM
 
 logger = logging.getLogger(__name__)
 
+
 # Define models for input processing with Pydantic
 class SimulatedInput(BaseModel):
     """Structured input model for mind simulation."""
 
-    visual: Optional[List[float]] = None
-    auditory: Optional[List[float]] = None
-    language: Optional[str] = None
+    visual: list[float] | None = None
+    auditory: list[float] | None = None
+    language: str | None = None
     source: str = "environment"
-    type: Optional[str] = None
+    type: str | None = None
 
     @field_validator("visual", "auditory", mode="before")
     def ensure_proper_length(cls, v, values, **kwargs):
@@ -56,44 +57,62 @@ class SimulatedInput(BaseModel):
     def ensure_has_content(cls, values):
         """Ensure at least one input type is provided."""
         # In Pydantic v2, values is the model instance itself in 'after' mode
-        if not any([getattr(values, key, None) for key in ["visual", "auditory", "language"]]):
-            raise ValueError("At least one input type (visual, auditory, language) must be provided")
+        if not any(
+            [getattr(values, key, None) for key in ["visual", "auditory", "language"]]
+        ):
+            raise ValueError(
+                "At least one input type (visual, auditory, language) must be provided"
+            )
         return values
 
     class Config:
         validate_assignment = True
         extra = "allow"
 
+
 # Define models for the dashboard configuration
 class TrainingConfig(BaseModel):
     """Configuration for training and saving models."""
 
-    save_interval_steps: int = Field(default=100, ge=1, description="Steps between model saves")
-    save_directory: str = Field(default="saved_models", description="Directory for saved models")
-    checkpoint_count: int = Field(default=5, ge=1, description="Number of checkpoints to keep")
-    step_interval: float = Field(default=0.1, ge=0.01, le=10.0, description="Time between simulation steps (seconds)")
+    save_interval_steps: int = Field(
+        default=100, ge=1, description="Steps between model saves"
+    )
+    save_directory: str = Field(
+        default="saved_models", description="Directory for saved models"
+    )
+    checkpoint_count: int = Field(
+        default=5, ge=1, description="Number of checkpoints to keep"
+    )
+    step_interval: float = Field(
+        default=0.1,
+        ge=0.01,
+        le=10.0,
+        description="Time between simulation steps (seconds)",
+    )
     auto_backup: bool = Field(default=True, description="Automatically backup models")
 
     class Config:
         validate_assignment = True
 
+
 class DashboardData(BaseModel):
     """Data store for the dashboard."""
 
-    mind_state: Dict[str, Any] = Field(default_factory=dict)
-    network_states: Dict[str, Dict[str, Any]] = Field(default_factory=dict)
-    development_history: List[Dict[str, Any]] = Field(default_factory=list)
-    emotion_history: List[Dict[str, Any]] = Field(default_factory=list)
-    memory_history: List[Dict[str, Any]] = Field(default_factory=list)
+    mind_state: dict[str, Any] = Field(default_factory=dict)
+    network_states: dict[str, dict[str, Any]] = Field(default_factory=dict)
+    development_history: list[dict[str, Any]] = Field(default_factory=list)
+    emotion_history: list[dict[str, Any]] = Field(default_factory=list)
+    memory_history: list[dict[str, Any]] = Field(default_factory=list)
     step_count: int = Field(default=0)
     is_running: bool = Field(default=False)
-    last_mother_response: Optional[str] = Field(default=None)
+    last_mother_response: str | None = Field(default=None)
     training_config: TrainingConfig = Field(default_factory=TrainingConfig)
     last_saved_step: int = Field(default=0)
-    errors: List[str] = Field(default_factory=list)
+    errors: list[str] = Field(default_factory=list)
 
     class Config:
         validate_assignment = True
+
 
 # Initialize global state
 dashboard_data = DashboardData()
@@ -115,12 +134,13 @@ for name, network in networks.items():
 simulation_thread = None
 simulation_active = False
 
+
 def bootstrap_mind(mind: Mind) -> None:
     """Bootstrap the mind with initial experiences to jump-start development.
-    
+
     This function provides foundational experiences to the mind to
     initialize development processes.
-    
+
     Args:
         mind: The Mind instance to bootstrap
 
@@ -161,9 +181,10 @@ def bootstrap_mind(mind: Mind) -> None:
 
     logger.info("Mind bootstrapped with initial experiences")
 
-def generate_environmental_input() -> Dict[str, Any]:
+
+def generate_environmental_input() -> dict[str, Any]:
     """Generate environmental sensory inputs for the mind.
-    
+
     Returns:
         Dictionary of sensory input data
 
@@ -200,12 +221,13 @@ def generate_environmental_input() -> Dict[str, Any]:
 
     return simulated_input.model_dump(exclude_none=True)
 
-def process_mother_response(response_text: str) -> Dict[str, Any]:
+
+def process_mother_response(response_text: str) -> dict[str, Any]:
     """Process mother's response as sensory input.
-    
+
     Args:
         response_text: Text of mother's response
-        
+
     Returns:
         Dictionary of sensory input data
 
@@ -222,6 +244,7 @@ def process_mother_response(response_text: str) -> Dict[str, Any]:
     )
 
     return mother_input.model_dump(exclude_none=True)
+
 
 def run_simulation():
     """Run the simulation in the background."""
@@ -282,49 +305,62 @@ def run_simulation():
                 }
 
             # Track development history
-            dashboard_data.development_history.append({
-                "step": dashboard_data.step_count,
-                "timestamp": datetime.now().isoformat(),
-                "developmental_stage": observable_state.developmental_stage.name,
-                "energy_level": observable_state.energy_level,
-                "consciousness_level": mind_state.consciousness_level,
-            })
+            dashboard_data.development_history.append(
+                {
+                    "step": dashboard_data.step_count,
+                    "timestamp": datetime.now().isoformat(),
+                    "developmental_stage": observable_state.developmental_stage.name,
+                    "energy_level": observable_state.energy_level,
+                    "consciousness_level": mind_state.consciousness_level,
+                }
+            )
 
             # Limit history size to prevent memory issues
             if len(dashboard_data.development_history) > 1000:
-                dashboard_data.development_history = dashboard_data.development_history[-1000:]
+                dashboard_data.development_history = dashboard_data.development_history[
+                    -1000:
+                ]
 
             # Track emotion history
             if observable_state.recent_emotions:
                 for emotion in observable_state.recent_emotions:
-                    dashboard_data.emotion_history.append({
-                        "step": dashboard_data.step_count,
-                        "timestamp": datetime.now().isoformat(),
-                        "emotion": emotion.name.value,
-                        "intensity": emotion.intensity,
-                    })
+                    dashboard_data.emotion_history.append(
+                        {
+                            "step": dashboard_data.step_count,
+                            "timestamp": datetime.now().isoformat(),
+                            "emotion": emotion.name.value,
+                            "intensity": emotion.intensity,
+                        }
+                    )
 
                 # Limit history size
                 if len(dashboard_data.emotion_history) > 1000:
-                    dashboard_data.emotion_history = dashboard_data.emotion_history[-1000:]
+                    dashboard_data.emotion_history = dashboard_data.emotion_history[
+                        -1000:
+                    ]
 
             # Track memory counts
-            dashboard_data.memory_history.append({
-                "step": dashboard_data.step_count,
-                "timestamp": datetime.now().isoformat(),
-                "short_term": len(mind.short_term_memory),
-                "long_term": len(mind.long_term_memory),
-            })
+            dashboard_data.memory_history.append(
+                {
+                    "step": dashboard_data.step_count,
+                    "timestamp": datetime.now().isoformat(),
+                    "short_term": len(mind.short_term_memory),
+                    "long_term": len(mind.long_term_memory),
+                }
+            )
 
             # Limit history size
             if len(dashboard_data.memory_history) > 1000:
                 dashboard_data.memory_history = dashboard_data.memory_history[-1000:]
 
             # Save models at specified intervals
-            if (dashboard_data.training_config.auto_backup and
-                dashboard_data.step_count % dashboard_data.training_config.save_interval_steps == 0 and
-                dashboard_data.step_count > dashboard_data.last_saved_step):
-
+            if (
+                dashboard_data.training_config.auto_backup
+                and dashboard_data.step_count
+                % dashboard_data.training_config.save_interval_steps
+                == 0
+                and dashboard_data.step_count > dashboard_data.last_saved_step
+            ):
                 save_models()
                 dashboard_data.last_saved_step = dashboard_data.step_count
 
@@ -339,7 +375,8 @@ def run_simulation():
                 dashboard_data.errors = dashboard_data.errors[-50:]
             time.sleep(1)  # Wait before retrying
 
-def save_models(checkpoint_name: Optional[str] = None):
+
+def save_models(checkpoint_name: str | None = None):
     """Save all models to disk."""
     try:
         # Create the save directory if it doesn't exist
@@ -351,7 +388,9 @@ def save_models(checkpoint_name: Optional[str] = None):
             checkpoint_dir = os.path.join(save_dir, checkpoint_name)
         else:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            checkpoint_dir = os.path.join(save_dir, f"checkpoint_{timestamp}_step_{dashboard_data.step_count}")
+            checkpoint_dir = os.path.join(
+                save_dir, f"checkpoint_{timestamp}_step_{dashboard_data.step_count}"
+            )
 
         os.makedirs(checkpoint_dir, exist_ok=True)
 
@@ -370,25 +409,34 @@ def save_models(checkpoint_name: Optional[str] = None):
             json.dump(data_dict, f, indent=2, cls=DateTimeEncoder)
 
         # Clean up old checkpoints if needed
-        checkpoints = [d for d in os.listdir(save_dir)
-                      if os.path.isdir(os.path.join(save_dir, d)) and d.startswith("checkpoint_")]
+        checkpoints = [
+            d
+            for d in os.listdir(save_dir)
+            if os.path.isdir(os.path.join(save_dir, d)) and d.startswith("checkpoint_")
+        ]
 
         if len(checkpoints) > dashboard_data.training_config.checkpoint_count:
             # Sort by creation time and remove oldest
             checkpoints.sort(key=lambda x: os.path.getctime(os.path.join(save_dir, x)))
-            for old_checkpoint in checkpoints[:-dashboard_data.training_config.checkpoint_count]:
+            for old_checkpoint in checkpoints[
+                : -dashboard_data.training_config.checkpoint_count
+            ]:
                 old_dir = os.path.join(save_dir, old_checkpoint)
                 try:
                     import shutil
+
                     shutil.rmtree(old_dir)
                 except Exception as e:
-                    dashboard_data.errors.append(f"Failed to remove old checkpoint {old_dir}: {e!s}")
+                    dashboard_data.errors.append(
+                        f"Failed to remove old checkpoint {old_dir}: {e!s}"
+                    )
 
         return True, checkpoint_dir
     except Exception as e:
         error_msg = f"Error saving models: {e!s}"
         dashboard_data.errors.append(error_msg)
         return False, error_msg
+
 
 def load_models(checkpoint_dir: str):
     """Load models from disk."""
@@ -405,13 +453,21 @@ def load_models(checkpoint_dir: str):
                 data_dict = json.load(f)
 
                 # Process any datetime fields in history data
-                for history_name in ["development_history", "emotion_history", "memory_history"]:
+                for history_name in [
+                    "development_history",
+                    "emotion_history",
+                    "memory_history",
+                ]:
                     if history_name in data_dict:
                         for entry in data_dict[history_name]:
                             # Convert timestamp strings back to datetime objects if needed
-                            if "timestamp" in entry and isinstance(entry["timestamp"], str):
+                            if "timestamp" in entry and isinstance(
+                                entry["timestamp"], str
+                            ):
                                 try:
-                                    entry["timestamp"] = datetime.fromisoformat(entry["timestamp"])
+                                    entry["timestamp"] = datetime.fromisoformat(
+                                        entry["timestamp"]
+                                    )
                                 except (ValueError, TypeError):
                                     # If conversion fails, leave as string
                                     pass
@@ -427,12 +483,14 @@ def load_models(checkpoint_dir: str):
         dashboard_data.errors.append(error_msg)
         return False, error_msg
 
+
 # Add a custom JSONEncoder to handle datetime objects
 class DateTimeEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, datetime):
             return obj.isoformat()
         return super().default(obj)
+
 
 # Dash App Setup
 app = dash.Dash(
@@ -617,369 +675,780 @@ app.layout = dbc.Container(
     fluid=True,
     style={"padding": "20px"},
     children=[
-        html.Div(id="interval-container", children=[
-            dcc.Interval(id="update-interval", interval=1000, n_intervals=0),
-        ]),
-
+        html.Div(
+            id="interval-container",
+            children=[
+                dcc.Interval(id="update-interval", interval=1000, n_intervals=0),
+            ],
+        ),
         # Header Row
-        dbc.Row([
-            dbc.Col([
-                html.H1("Neural Child Dashboard",
-                        style={"backgroundImage": "linear-gradient(90deg, #7303c0, #3b8dff)",
-                               "WebkitBackgroundClip": "text",
-                               "WebkitTextFillColor": "transparent",
-                               "fontWeight": "bold",
-                               "marginBottom": "20px"}),
-            ], width=6),
-            dbc.Col([
-                dbc.Row([
-                    dbc.Col([
-                        html.Div([
-                            html.Span("Status: ", style={"marginRight": "5px"}),
-                            html.Span(id="status-indicator", className="status-indicator status-inactive"),
-                            html.Span(id="status-text", children="Inactive"),
-                        ], style={"marginBottom": "10px"}),
-                    ], width=6),
-                    dbc.Col([
-                        html.Div([
-                            html.Span("Step Count: "),
-                            html.Span(id="step-count", children="0"),
-                        ], style={"marginBottom": "10px"}),
-                    ], width=6),
-                ]),
-                dbc.Row([
-                    dbc.Col([
-                        html.Div([
-                            html.Button("Start Simulation", id="start-button", className="control-button",
-                                        style={"marginRight": "10px", "backgroundColor": "#4CAF50"}),
-                            html.Button("Stop Simulation", id="stop-button", className="control-button",
-                                        style={"marginRight": "10px", "backgroundColor": "#F44336"}),
-                            html.Button("Save Models", id="save-button", className="control-button",
-                                        style={"backgroundColor": "#3b8dff"}),
-                        ]),
-                    ], width=12),
-                ]),
-            ], width=6),
-        ]),
-
-        # Main Dashboard Row
-        dbc.Row([
-            # Left Column - Mind State and Controls
-            dbc.Col([
-                # Mind State Card
-                html.Div(className="card", children=[
-                    html.Div(className="card-header", children="Mind State Overview"),
-                    html.Div(className="card-body", children=[
-                        dbc.Row([
-                            dbc.Col([
-                                html.Div([
-                                    html.H5("Developmental Stage", className="mb-2"),
-                                    html.Div(id="developmental-stage", className="stage-indicator", children="INFANT"),
-                                ], style={"marginBottom": "15px"}),
-                            ], width=6),
-                            dbc.Col([
-                                html.Div([
-                                    html.H5("Consciousness Level", className="mb-2"),
-                                    dbc.Progress(id="consciousness-progress", value=20,
-                                                 style={"height": "10px", "borderRadius": "5px"}),
-                                ], style={"marginBottom": "15px"}),
-                            ], width=6),
-                        ]),
-                        dbc.Row([
-                            dbc.Col([
-                                html.Div([
-                                    html.H5("Energy Level", className="mb-2"),
-                                    dbc.Progress(id="energy-progress", value=70, color="success",
-                                                 style={"height": "10px", "borderRadius": "5px"}),
-                                ], style={"marginBottom": "15px"}),
-                            ], width=6),
-                            dbc.Col([
-                                html.Div([
-                                    html.H5("Mood", className="mb-2"),
-                                    dbc.Progress(id="mood-progress", value=50, color="info",
-                                                 style={"height": "10px", "borderRadius": "5px"}),
-                                ], style={"marginBottom": "15px"}),
-                            ], width=6),
-                        ]),
-                        html.Div([
-                            html.H5("Current Focus", className="mb-2"),
-                            html.Div(id="current-focus", children="None"),
-                        ], style={"marginBottom": "15px"}),
-                        html.Div([
-                            html.H5("Latest Vocalization", className="mb-2"),
-                            html.Div(id="vocalization", children="None"),
-                        ], style={"marginBottom": "15px"}),
-                    ]),
-                ]),
-
-                # Mother Interaction Card
-                html.Div(className="card", children=[
-                    html.Div(className="card-header", children="Mother's Response"),
-                    html.Div(className="card-body", children=[
-                        html.Div(id="mother-response",
-                                 style={"minHeight": "100px", "fontStyle": "italic"},
-                                 children="No recent responses."),
-                    ]),
-                ]),
-
-                # Training Configuration Card
-                html.Div(className="card", children=[
-                    html.Div(className="card-header", children="Training Configuration"),
-                    html.Div(className="card-body", children=[
-                        dbc.Row([
-                            dbc.Col([
-                                html.Label("Step Interval (seconds)"),
-                                dcc.Slider(
-                                    id="step-interval-slider",
-                                    min=0.01,
-                                    max=1,
-                                    step=0.01,
-                                    value=0.1,
-                                    marks={0.01: "0.01", 0.25: "0.25", 0.5: "0.5", 0.75: "0.75", 1: "1"},
-                                    tooltip={"placement": "bottom", "always_visible": True},
-                                ),
-                            ], width=12),
-                        ], className="mb-3"),
-                        dbc.Row([
-                            dbc.Col([
-                                html.Label("Save Interval (steps)"),
-                                dbc.Input(
-                                    id="save-interval-input",
-                                    type="number",
-                                    value=100,
-                                    min=1,
-                                    step=1,
-                                ),
-                            ], width=6),
-                            dbc.Col([
-                                html.Label("Checkpoints to Keep"),
-                                dbc.Input(
-                                    id="checkpoint-count-input",
-                                    type="number",
-                                    value=5,
-                                    min=1,
-                                    step=1,
-                                ),
-                            ], width=6),
-                        ], className="mb-3"),
-                        dbc.Row([
-                            dbc.Col([
-                                html.Label("Save Directory"),
-                                dbc.Input(
-                                    id="save-directory-input",
-                                    type="text",
-                                    value="saved_models",
-                                ),
-                            ], width=8),
-                            dbc.Col([
-                                dbc.Checkbox(
-                                    id="auto-backup-checkbox",
-                                    label="Auto Backup",
-                                    value=True,
-                                ),
-                            ], width=4, style={"display": "flex", "alignItems": "flex-end"}),
-                        ]),
-                        html.Div(
-                            html.Button(
-                                "Apply Configuration",
-                                id="apply-config-button",
-                                className="control-button",
-                                style={"marginTop": "15px"},
-                            ),
-                            style={"textAlign": "right"},
-                        ),
-                    ]),
-                ]),
-
-                # Error Log Card
-                html.Div(className="card", children=[
-                    html.Div(className="card-header", children="System Log"),
-                    html.Div(className="card-body", children=[
-                        html.Div(
-                            id="error-log",
+        dbc.Row(
+            [
+                dbc.Col(
+                    [
+                        html.H1(
+                            "Neural Child Dashboard",
                             style={
-                                "maxHeight": "150px",
-                                "overflowY": "auto",
-                                "fontFamily": "monospace",
-                                "fontSize": "0.8rem",
-                                "whiteSpace": "pre-wrap",
+                                "backgroundImage": "linear-gradient(90deg, #7303c0, #3b8dff)",
+                                "WebkitBackgroundClip": "text",
+                                "WebkitTextFillColor": "transparent",
+                                "fontWeight": "bold",
+                                "marginBottom": "20px",
                             },
-                            children="System ready.",
                         ),
-                    ]),
-                ]),
-            ], width=4),
-
-            # Right Column - Networks and Visualization
-            dbc.Col([
-                # Tabs for different views
-                dcc.Tabs(id="main-tabs", value="networks-tab", className="custom-tabs", children=[
-                    # Networks Tab
-                    dcc.Tab(
-                        label="Neural Networks",
-                        value="networks-tab",
-                        className="custom-tab",
-                        selected_className="custom-tab--selected",
-                        children=[
-                            dbc.Row([
-                                # Consciousness Network
-                                dbc.Col([
-                                    html.Div(className="card network-card", children=[
-                                        html.Div(className="card-header", children="Consciousness Network"),
-                                        html.Div(className="card-body", children=[
-                                            html.Div(id="consciousness-output",
-                                                    style={"marginBottom": "10px"}),
-                                            html.Hr(),
-                                            html.Div([
-                                                html.Span("Confidence: "),
-                                                dbc.Progress(id="consciousness-confidence", value=0,
-                                                            style={"height": "6px", "borderRadius": "3px"}),
-                                            ]),
-                                        ]),
-                                    ]),
-                                ], width=6),
-
-                                # Emotions Network
-                                dbc.Col([
-                                    html.Div(className="card network-card", children=[
-                                        html.Div(className="card-header", children="Emotions Network"),
-                                        html.Div(className="card-body", children=[
-                                            html.Div(id="emotions-output",
-                                                    style={"marginBottom": "10px"}),
-                                            html.Hr(),
-                                            html.Div([
-                                                html.Span("Confidence: "),
-                                                dbc.Progress(id="emotions-confidence", value=0,
-                                                            style={"height": "6px", "borderRadius": "3px"}),
-                                            ]),
-                                        ]),
-                                    ]),
-                                ], width=6),
-                            ], style={"marginBottom": "15px"}),
-
-                            dbc.Row([
-                                # Perception Network
-                                dbc.Col([
-                                    html.Div(className="card network-card", children=[
-                                        html.Div(className="card-header", children="Perception Network"),
-                                        html.Div(className="card-body", children=[
-                                            html.Div(id="perception-output",
-                                                    style={"marginBottom": "10px"}),
-                                            html.Hr(),
-                                            html.Div([
-                                                html.Span("Confidence: "),
-                                                dbc.Progress(id="perception-confidence", value=0,
-                                                            style={"height": "6px", "borderRadius": "3px"}),
-                                            ]),
-                                        ]),
-                                    ]),
-                                ], width=6),
-
-                                # Thoughts Network
-                                dbc.Col([
-                                    html.Div(className="card network-card", children=[
-                                        html.Div(className="card-header", children="Thoughts Network"),
-                                        html.Div(className="card-body", children=[
-                                            html.Div(id="thoughts-output",
-                                                    style={"marginBottom": "10px"}),
-                                            html.Hr(),
-                                            html.Div([
-                                                html.Span("Confidence: "),
-                                                dbc.Progress(id="thoughts-confidence", value=0,
-                                                            style={"height": "6px", "borderRadius": "3px"}),
-                                            ]),
-                                        ]),
-                                    ]),
-                                ], width=6),
-                            ]),
-                        ],
-                    ),
-
-                    # Analytics Tab
-                    dcc.Tab(
-                        label="Analytics",
-                        value="analytics-tab",
-                        className="custom-tab",
-                        selected_className="custom-tab--selected",
-                        children=[
-                            # Development Graph
-                            html.Div(className="card", style={"marginTop": "15px"}, children=[
-                                html.Div(className="card-header", children="Development Over Time"),
-                                html.Div(className="card-body", children=[
-                                    dcc.Graph(
-                                        id="development-graph",
-                                        config={"displayModeBar": False},
-                                        style={"height": "250px"},
-                                    ),
-                                ]),
-                            ]),
-
-                            # Emotions Graph
-                            html.Div(className="card", style={"marginTop": "15px"}, children=[
-                                html.Div(className="card-header", children="Emotional State Evolution"),
-                                html.Div(className="card-body", children=[
-                                    dcc.Graph(
-                                        id="emotions-graph",
-                                        config={"displayModeBar": False},
-                                        style={"height": "250px"},
-                                    ),
-                                ]),
-                            ]),
-
-                            # Memory Graph
-                            html.Div(className="card", style={"marginTop": "15px"}, children=[
-                                html.Div(className="card-header", children="Memory Development"),
-                                html.Div(className="card-body", children=[
-                                    dcc.Graph(
-                                        id="memory-graph",
-                                        config={"displayModeBar": False},
-                                        style={"height": "250px"},
-                                    ),
-                                ]),
-                            ]),
-                        ],
-                    ),
-
-                    # Development Tab
-                    dcc.Tab(
-                        label="Development",
-                        value="development-tab",
-                        className="custom-tab",
-                        selected_className="custom-tab--selected",
-                        children=[
-                            # Developmental Milestones
-                            html.Div(className="card", style={"marginTop": "15px"}, children=[
-                                html.Div(className="card-header", children="Developmental Milestones"),
-                                html.Div(className="card-body", children=[
-                                    html.Div(id="milestones-content"),
-                                ]),
-                            ]),
-
-                            # Beliefs Table
-                            html.Div(className="card", style={"marginTop": "15px"}, children=[
-                                html.Div(className="card-header", children="Beliefs System"),
-                                html.Div(className="card-body", children=[
-                                    html.Div(id="beliefs-content"),
-                                ]),
-                            ]),
-
-                            # Needs Status
-                            html.Div(className="card", style={"marginTop": "15px"}, children=[
-                                html.Div(className="card-header", children="Needs Status"),
-                                html.Div(className="card-body", children=[
-                                    html.Div(id="needs-content"),
-                                ]),
-                            ]),
-                        ],
-                    ),
-                ]),
-            ], width=8),
-        ]),
-
+                    ],
+                    width=6,
+                ),
+                dbc.Col(
+                    [
+                        dbc.Row(
+                            [
+                                dbc.Col(
+                                    [
+                                        html.Div(
+                                            [
+                                                html.Span(
+                                                    "Status: ",
+                                                    style={"marginRight": "5px"},
+                                                ),
+                                                html.Span(
+                                                    id="status-indicator",
+                                                    className="status-indicator status-inactive",
+                                                ),
+                                                html.Span(
+                                                    id="status-text",
+                                                    children="Inactive",
+                                                ),
+                                            ],
+                                            style={"marginBottom": "10px"},
+                                        ),
+                                    ],
+                                    width=6,
+                                ),
+                                dbc.Col(
+                                    [
+                                        html.Div(
+                                            [
+                                                html.Span("Step Count: "),
+                                                html.Span(
+                                                    id="step-count", children="0"
+                                                ),
+                                            ],
+                                            style={"marginBottom": "10px"},
+                                        ),
+                                    ],
+                                    width=6,
+                                ),
+                            ]
+                        ),
+                        dbc.Row(
+                            [
+                                dbc.Col(
+                                    [
+                                        html.Div(
+                                            [
+                                                html.Button(
+                                                    "Start Simulation",
+                                                    id="start-button",
+                                                    className="control-button",
+                                                    style={
+                                                        "marginRight": "10px",
+                                                        "backgroundColor": "#4CAF50",
+                                                    },
+                                                ),
+                                                html.Button(
+                                                    "Stop Simulation",
+                                                    id="stop-button",
+                                                    className="control-button",
+                                                    style={
+                                                        "marginRight": "10px",
+                                                        "backgroundColor": "#F44336",
+                                                    },
+                                                ),
+                                                html.Button(
+                                                    "Save Models",
+                                                    id="save-button",
+                                                    className="control-button",
+                                                    style={
+                                                        "backgroundColor": "#3b8dff"
+                                                    },
+                                                ),
+                                            ]
+                                        ),
+                                    ],
+                                    width=12,
+                                ),
+                            ]
+                        ),
+                    ],
+                    width=6,
+                ),
+            ]
+        ),
+        # Main Dashboard Row
+        dbc.Row(
+            [
+                # Left Column - Mind State and Controls
+                dbc.Col(
+                    [
+                        # Mind State Card
+                        html.Div(
+                            className="card",
+                            children=[
+                                html.Div(
+                                    className="card-header",
+                                    children="Mind State Overview",
+                                ),
+                                html.Div(
+                                    className="card-body",
+                                    children=[
+                                        dbc.Row(
+                                            [
+                                                dbc.Col(
+                                                    [
+                                                        html.Div(
+                                                            [
+                                                                html.H5(
+                                                                    "Developmental Stage",
+                                                                    className="mb-2",
+                                                                ),
+                                                                html.Div(
+                                                                    id="developmental-stage",
+                                                                    className="stage-indicator",
+                                                                    children="INFANT",
+                                                                ),
+                                                            ],
+                                                            style={
+                                                                "marginBottom": "15px"
+                                                            },
+                                                        ),
+                                                    ],
+                                                    width=6,
+                                                ),
+                                                dbc.Col(
+                                                    [
+                                                        html.Div(
+                                                            [
+                                                                html.H5(
+                                                                    "Consciousness Level",
+                                                                    className="mb-2",
+                                                                ),
+                                                                dbc.Progress(
+                                                                    id="consciousness-progress",
+                                                                    value=20,
+                                                                    style={
+                                                                        "height": "10px",
+                                                                        "borderRadius": "5px",
+                                                                    },
+                                                                ),
+                                                            ],
+                                                            style={
+                                                                "marginBottom": "15px"
+                                                            },
+                                                        ),
+                                                    ],
+                                                    width=6,
+                                                ),
+                                            ]
+                                        ),
+                                        dbc.Row(
+                                            [
+                                                dbc.Col(
+                                                    [
+                                                        html.Div(
+                                                            [
+                                                                html.H5(
+                                                                    "Energy Level",
+                                                                    className="mb-2",
+                                                                ),
+                                                                dbc.Progress(
+                                                                    id="energy-progress",
+                                                                    value=70,
+                                                                    color="success",
+                                                                    style={
+                                                                        "height": "10px",
+                                                                        "borderRadius": "5px",
+                                                                    },
+                                                                ),
+                                                            ],
+                                                            style={
+                                                                "marginBottom": "15px"
+                                                            },
+                                                        ),
+                                                    ],
+                                                    width=6,
+                                                ),
+                                                dbc.Col(
+                                                    [
+                                                        html.Div(
+                                                            [
+                                                                html.H5(
+                                                                    "Mood",
+                                                                    className="mb-2",
+                                                                ),
+                                                                dbc.Progress(
+                                                                    id="mood-progress",
+                                                                    value=50,
+                                                                    color="info",
+                                                                    style={
+                                                                        "height": "10px",
+                                                                        "borderRadius": "5px",
+                                                                    },
+                                                                ),
+                                                            ],
+                                                            style={
+                                                                "marginBottom": "15px"
+                                                            },
+                                                        ),
+                                                    ],
+                                                    width=6,
+                                                ),
+                                            ]
+                                        ),
+                                        html.Div(
+                                            [
+                                                html.H5(
+                                                    "Current Focus", className="mb-2"
+                                                ),
+                                                html.Div(
+                                                    id="current-focus", children="None"
+                                                ),
+                                            ],
+                                            style={"marginBottom": "15px"},
+                                        ),
+                                        html.Div(
+                                            [
+                                                html.H5(
+                                                    "Latest Vocalization",
+                                                    className="mb-2",
+                                                ),
+                                                html.Div(
+                                                    id="vocalization", children="None"
+                                                ),
+                                            ],
+                                            style={"marginBottom": "15px"},
+                                        ),
+                                    ],
+                                ),
+                            ],
+                        ),
+                        # Mother Interaction Card
+                        html.Div(
+                            className="card",
+                            children=[
+                                html.Div(
+                                    className="card-header",
+                                    children="Mother's Response",
+                                ),
+                                html.Div(
+                                    className="card-body",
+                                    children=[
+                                        html.Div(
+                                            id="mother-response",
+                                            style={
+                                                "minHeight": "100px",
+                                                "fontStyle": "italic",
+                                            },
+                                            children="No recent responses.",
+                                        ),
+                                    ],
+                                ),
+                            ],
+                        ),
+                        # Training Configuration Card
+                        html.Div(
+                            className="card",
+                            children=[
+                                html.Div(
+                                    className="card-header",
+                                    children="Training Configuration",
+                                ),
+                                html.Div(
+                                    className="card-body",
+                                    children=[
+                                        dbc.Row(
+                                            [
+                                                dbc.Col(
+                                                    [
+                                                        html.Label(
+                                                            "Step Interval (seconds)"
+                                                        ),
+                                                        dcc.Slider(
+                                                            id="step-interval-slider",
+                                                            min=0.01,
+                                                            max=1,
+                                                            step=0.01,
+                                                            value=0.1,
+                                                            marks={
+                                                                0.01: "0.01",
+                                                                0.25: "0.25",
+                                                                0.5: "0.5",
+                                                                0.75: "0.75",
+                                                                1: "1",
+                                                            },
+                                                            tooltip={
+                                                                "placement": "bottom",
+                                                                "always_visible": True,
+                                                            },
+                                                        ),
+                                                    ],
+                                                    width=12,
+                                                ),
+                                            ],
+                                            className="mb-3",
+                                        ),
+                                        dbc.Row(
+                                            [
+                                                dbc.Col(
+                                                    [
+                                                        html.Label(
+                                                            "Save Interval (steps)"
+                                                        ),
+                                                        dbc.Input(
+                                                            id="save-interval-input",
+                                                            type="number",
+                                                            value=100,
+                                                            min=1,
+                                                            step=1,
+                                                        ),
+                                                    ],
+                                                    width=6,
+                                                ),
+                                                dbc.Col(
+                                                    [
+                                                        html.Label(
+                                                            "Checkpoints to Keep"
+                                                        ),
+                                                        dbc.Input(
+                                                            id="checkpoint-count-input",
+                                                            type="number",
+                                                            value=5,
+                                                            min=1,
+                                                            step=1,
+                                                        ),
+                                                    ],
+                                                    width=6,
+                                                ),
+                                            ],
+                                            className="mb-3",
+                                        ),
+                                        dbc.Row(
+                                            [
+                                                dbc.Col(
+                                                    [
+                                                        html.Label("Save Directory"),
+                                                        dbc.Input(
+                                                            id="save-directory-input",
+                                                            type="text",
+                                                            value="saved_models",
+                                                        ),
+                                                    ],
+                                                    width=8,
+                                                ),
+                                                dbc.Col(
+                                                    [
+                                                        dbc.Checkbox(
+                                                            id="auto-backup-checkbox",
+                                                            label="Auto Backup",
+                                                            value=True,
+                                                        ),
+                                                    ],
+                                                    width=4,
+                                                    style={
+                                                        "display": "flex",
+                                                        "alignItems": "flex-end",
+                                                    },
+                                                ),
+                                            ]
+                                        ),
+                                        html.Div(
+                                            html.Button(
+                                                "Apply Configuration",
+                                                id="apply-config-button",
+                                                className="control-button",
+                                                style={"marginTop": "15px"},
+                                            ),
+                                            style={"textAlign": "right"},
+                                        ),
+                                    ],
+                                ),
+                            ],
+                        ),
+                        # Error Log Card
+                        html.Div(
+                            className="card",
+                            children=[
+                                html.Div(
+                                    className="card-header", children="System Log"
+                                ),
+                                html.Div(
+                                    className="card-body",
+                                    children=[
+                                        html.Div(
+                                            id="error-log",
+                                            style={
+                                                "maxHeight": "150px",
+                                                "overflowY": "auto",
+                                                "fontFamily": "monospace",
+                                                "fontSize": "0.8rem",
+                                                "whiteSpace": "pre-wrap",
+                                            },
+                                            children="System ready.",
+                                        ),
+                                    ],
+                                ),
+                            ],
+                        ),
+                    ],
+                    width=4,
+                ),
+                # Right Column - Networks and Visualization
+                dbc.Col(
+                    [
+                        # Tabs for different views
+                        dcc.Tabs(
+                            id="main-tabs",
+                            value="networks-tab",
+                            className="custom-tabs",
+                            children=[
+                                # Networks Tab
+                                dcc.Tab(
+                                    label="Neural Networks",
+                                    value="networks-tab",
+                                    className="custom-tab",
+                                    selected_className="custom-tab--selected",
+                                    children=[
+                                        dbc.Row(
+                                            [
+                                                # Consciousness Network
+                                                dbc.Col(
+                                                    [
+                                                        html.Div(
+                                                            className="card network-card",
+                                                            children=[
+                                                                html.Div(
+                                                                    className="card-header",
+                                                                    children="Consciousness Network",
+                                                                ),
+                                                                html.Div(
+                                                                    className="card-body",
+                                                                    children=[
+                                                                        html.Div(
+                                                                            id="consciousness-output",
+                                                                            style={
+                                                                                "marginBottom": "10px"
+                                                                            },
+                                                                        ),
+                                                                        html.Hr(),
+                                                                        html.Div(
+                                                                            [
+                                                                                html.Span(
+                                                                                    "Confidence: "
+                                                                                ),
+                                                                                dbc.Progress(
+                                                                                    id="consciousness-confidence",
+                                                                                    value=0,
+                                                                                    style={
+                                                                                        "height": "6px",
+                                                                                        "borderRadius": "3px",
+                                                                                    },
+                                                                                ),
+                                                                            ]
+                                                                        ),
+                                                                    ],
+                                                                ),
+                                                            ],
+                                                        ),
+                                                    ],
+                                                    width=6,
+                                                ),
+                                                # Emotions Network
+                                                dbc.Col(
+                                                    [
+                                                        html.Div(
+                                                            className="card network-card",
+                                                            children=[
+                                                                html.Div(
+                                                                    className="card-header",
+                                                                    children="Emotions Network",
+                                                                ),
+                                                                html.Div(
+                                                                    className="card-body",
+                                                                    children=[
+                                                                        html.Div(
+                                                                            id="emotions-output",
+                                                                            style={
+                                                                                "marginBottom": "10px"
+                                                                            },
+                                                                        ),
+                                                                        html.Hr(),
+                                                                        html.Div(
+                                                                            [
+                                                                                html.Span(
+                                                                                    "Confidence: "
+                                                                                ),
+                                                                                dbc.Progress(
+                                                                                    id="emotions-confidence",
+                                                                                    value=0,
+                                                                                    style={
+                                                                                        "height": "6px",
+                                                                                        "borderRadius": "3px",
+                                                                                    },
+                                                                                ),
+                                                                            ]
+                                                                        ),
+                                                                    ],
+                                                                ),
+                                                            ],
+                                                        ),
+                                                    ],
+                                                    width=6,
+                                                ),
+                                            ],
+                                            style={"marginBottom": "15px"},
+                                        ),
+                                        dbc.Row(
+                                            [
+                                                # Perception Network
+                                                dbc.Col(
+                                                    [
+                                                        html.Div(
+                                                            className="card network-card",
+                                                            children=[
+                                                                html.Div(
+                                                                    className="card-header",
+                                                                    children="Perception Network",
+                                                                ),
+                                                                html.Div(
+                                                                    className="card-body",
+                                                                    children=[
+                                                                        html.Div(
+                                                                            id="perception-output",
+                                                                            style={
+                                                                                "marginBottom": "10px"
+                                                                            },
+                                                                        ),
+                                                                        html.Hr(),
+                                                                        html.Div(
+                                                                            [
+                                                                                html.Span(
+                                                                                    "Confidence: "
+                                                                                ),
+                                                                                dbc.Progress(
+                                                                                    id="perception-confidence",
+                                                                                    value=0,
+                                                                                    style={
+                                                                                        "height": "6px",
+                                                                                        "borderRadius": "3px",
+                                                                                    },
+                                                                                ),
+                                                                            ]
+                                                                        ),
+                                                                    ],
+                                                                ),
+                                                            ],
+                                                        ),
+                                                    ],
+                                                    width=6,
+                                                ),
+                                                # Thoughts Network
+                                                dbc.Col(
+                                                    [
+                                                        html.Div(
+                                                            className="card network-card",
+                                                            children=[
+                                                                html.Div(
+                                                                    className="card-header",
+                                                                    children="Thoughts Network",
+                                                                ),
+                                                                html.Div(
+                                                                    className="card-body",
+                                                                    children=[
+                                                                        html.Div(
+                                                                            id="thoughts-output",
+                                                                            style={
+                                                                                "marginBottom": "10px"
+                                                                            },
+                                                                        ),
+                                                                        html.Hr(),
+                                                                        html.Div(
+                                                                            [
+                                                                                html.Span(
+                                                                                    "Confidence: "
+                                                                                ),
+                                                                                dbc.Progress(
+                                                                                    id="thoughts-confidence",
+                                                                                    value=0,
+                                                                                    style={
+                                                                                        "height": "6px",
+                                                                                        "borderRadius": "3px",
+                                                                                    },
+                                                                                ),
+                                                                            ]
+                                                                        ),
+                                                                    ],
+                                                                ),
+                                                            ],
+                                                        ),
+                                                    ],
+                                                    width=6,
+                                                ),
+                                            ]
+                                        ),
+                                    ],
+                                ),
+                                # Analytics Tab
+                                dcc.Tab(
+                                    label="Analytics",
+                                    value="analytics-tab",
+                                    className="custom-tab",
+                                    selected_className="custom-tab--selected",
+                                    children=[
+                                        # Development Graph
+                                        html.Div(
+                                            className="card",
+                                            style={"marginTop": "15px"},
+                                            children=[
+                                                html.Div(
+                                                    className="card-header",
+                                                    children="Development Over Time",
+                                                ),
+                                                html.Div(
+                                                    className="card-body",
+                                                    children=[
+                                                        dcc.Graph(
+                                                            id="development-graph",
+                                                            config={
+                                                                "displayModeBar": False
+                                                            },
+                                                            style={"height": "250px"},
+                                                        ),
+                                                    ],
+                                                ),
+                                            ],
+                                        ),
+                                        # Emotions Graph
+                                        html.Div(
+                                            className="card",
+                                            style={"marginTop": "15px"},
+                                            children=[
+                                                html.Div(
+                                                    className="card-header",
+                                                    children="Emotional State Evolution",
+                                                ),
+                                                html.Div(
+                                                    className="card-body",
+                                                    children=[
+                                                        dcc.Graph(
+                                                            id="emotions-graph",
+                                                            config={
+                                                                "displayModeBar": False
+                                                            },
+                                                            style={"height": "250px"},
+                                                        ),
+                                                    ],
+                                                ),
+                                            ],
+                                        ),
+                                        # Memory Graph
+                                        html.Div(
+                                            className="card",
+                                            style={"marginTop": "15px"},
+                                            children=[
+                                                html.Div(
+                                                    className="card-header",
+                                                    children="Memory Development",
+                                                ),
+                                                html.Div(
+                                                    className="card-body",
+                                                    children=[
+                                                        dcc.Graph(
+                                                            id="memory-graph",
+                                                            config={
+                                                                "displayModeBar": False
+                                                            },
+                                                            style={"height": "250px"},
+                                                        ),
+                                                    ],
+                                                ),
+                                            ],
+                                        ),
+                                    ],
+                                ),
+                                # Development Tab
+                                dcc.Tab(
+                                    label="Development",
+                                    value="development-tab",
+                                    className="custom-tab",
+                                    selected_className="custom-tab--selected",
+                                    children=[
+                                        # Developmental Milestones
+                                        html.Div(
+                                            className="card",
+                                            style={"marginTop": "15px"},
+                                            children=[
+                                                html.Div(
+                                                    className="card-header",
+                                                    children="Developmental Milestones",
+                                                ),
+                                                html.Div(
+                                                    className="card-body",
+                                                    children=[
+                                                        html.Div(
+                                                            id="milestones-content"
+                                                        ),
+                                                    ],
+                                                ),
+                                            ],
+                                        ),
+                                        # Beliefs Table
+                                        html.Div(
+                                            className="card",
+                                            style={"marginTop": "15px"},
+                                            children=[
+                                                html.Div(
+                                                    className="card-header",
+                                                    children="Beliefs System",
+                                                ),
+                                                html.Div(
+                                                    className="card-body",
+                                                    children=[
+                                                        html.Div(id="beliefs-content"),
+                                                    ],
+                                                ),
+                                            ],
+                                        ),
+                                        # Needs Status
+                                        html.Div(
+                                            className="card",
+                                            style={"marginTop": "15px"},
+                                            children=[
+                                                html.Div(
+                                                    className="card-header",
+                                                    children="Needs Status",
+                                                ),
+                                                html.Div(
+                                                    className="card-body",
+                                                    children=[
+                                                        html.Div(id="needs-content"),
+                                                    ],
+                                                ),
+                                            ],
+                                        ),
+                                    ],
+                                ),
+                            ],
+                        ),
+                    ],
+                    width=8,
+                ),
+            ]
+        ),
         # Hidden div for storing intermediate data
         html.Div(id="intermediate-value", style={"display": "none"}),
     ],
 )
+
 
 # Callback to update the intermediate value with current state
 @app.callback(
@@ -987,20 +1456,25 @@ app.layout = dbc.Container(
     Input("update-interval", "n_intervals"),
 )
 def update_intermediate_value(n_intervals):
-    return json.dumps({
-        "is_running": dashboard_data.is_running,
-        "step_count": dashboard_data.step_count,
-        "mind_state": dashboard_data.mind_state,
-        "network_states": dashboard_data.network_states,
-        "last_mother_response": dashboard_data.last_mother_response,
-        "errors": dashboard_data.errors,
-    })
+    return json.dumps(
+        {
+            "is_running": dashboard_data.is_running,
+            "step_count": dashboard_data.step_count,
+            "mind_state": dashboard_data.mind_state,
+            "network_states": dashboard_data.network_states,
+            "last_mother_response": dashboard_data.last_mother_response,
+            "errors": dashboard_data.errors,
+        }
+    )
+
 
 # Callback to update the status indicators
 @app.callback(
-    [Output("status-indicator", "className"),
-     Output("status-text", "children"),
-     Output("step-count", "children")],
+    [
+        Output("status-indicator", "className"),
+        Output("status-text", "children"),
+        Output("step-count", "children"),
+    ],
     Input("intermediate-value", "children"),
 )
 def update_status_indicators(json_data):
@@ -1009,20 +1483,27 @@ def update_status_indicators(json_data):
     is_running = data.get("is_running", False)
     step_count = data.get("step_count", 0)
 
-    status_class = "status-indicator status-active" if is_running else "status-indicator status-inactive"
+    status_class = (
+        "status-indicator status-active"
+        if is_running
+        else "status-indicator status-inactive"
+    )
     status_text = "Running" if is_running else "Inactive"
 
     return status_class, status_text, step_count
 
+
 # Callback to update the mind state overviews
 @app.callback(
-    [Output("developmental-stage", "children"),
-     Output("consciousness-progress", "value"),
-     Output("energy-progress", "value"),
-     Output("mood-progress", "value"),
-     Output("current-focus", "children"),
-     Output("vocalization", "children"),
-     Output("mother-response", "children")],
+    [
+        Output("developmental-stage", "children"),
+        Output("consciousness-progress", "value"),
+        Output("energy-progress", "value"),
+        Output("mood-progress", "value"),
+        Output("current-focus", "children"),
+        Output("vocalization", "children"),
+        Output("mother-response", "children"),
+    ],
     Input("intermediate-value", "children"),
 )
 def update_mind_state(json_data):
@@ -1034,7 +1515,9 @@ def update_mind_state(json_data):
     developmental_stage = mind_state.get("developmental_stage", "INFANT")
     consciousness_level = int(mind_state.get("consciousness_level", 0.2) * 100)
     energy_level = int(mind_state.get("energy_level", 0.7) * 100)
-    apparent_mood = int((mind_state.get("apparent_mood", 0) + 1) * 50)  # Convert -1 to 1 range to 0-100
+    apparent_mood = int(
+        (mind_state.get("apparent_mood", 0) + 1) * 50
+    )  # Convert -1 to 1 range to 0-100
     current_focus = mind_state.get("current_focus", "None")
     vocalization = mind_state.get("vocalization", "None")
 
@@ -1050,16 +1533,19 @@ def update_mind_state(json_data):
         mother_response or "No recent responses.",
     )
 
+
 # Callback to update the neural network outputs
 @app.callback(
-    [Output("consciousness-output", "children"),
-     Output("consciousness-confidence", "value"),
-     Output("emotions-output", "children"),
-     Output("emotions-confidence", "value"),
-     Output("perception-output", "children"),
-     Output("perception-confidence", "value"),
-     Output("thoughts-output", "children"),
-     Output("thoughts-confidence", "value")],
+    [
+        Output("consciousness-output", "children"),
+        Output("consciousness-confidence", "value"),
+        Output("emotions-output", "children"),
+        Output("emotions-confidence", "value"),
+        Output("perception-output", "children"),
+        Output("perception-confidence", "value"),
+        Output("thoughts-output", "children"),
+        Output("thoughts-confidence", "value"),
+    ],
     Input("intermediate-value", "children"),
 )
 def update_network_outputs(json_data):
@@ -1097,6 +1583,7 @@ def update_network_outputs(json_data):
         thoughts_confidence,
     )
 
+
 # Callback to update the development graph
 @app.callback(
     Output("development-graph", "figure"),
@@ -1123,31 +1610,37 @@ def update_development_graph(n_intervals):
     # Create figure
     fig = go.Figure()
 
-    fig.add_trace(go.Scatter(
-        x=df["step"],
-        y=df["consciousness_level"],
-        mode="lines",
-        name="Consciousness",
-        line=dict(width=2, color="#9d68f2"),
-    ))
+    fig.add_trace(
+        go.Scatter(
+            x=df["step"],
+            y=df["consciousness_level"],
+            mode="lines",
+            name="Consciousness",
+            line=dict(width=2, color="#9d68f2"),
+        )
+    )
 
-    fig.add_trace(go.Scatter(
-        x=df["step"],
-        y=df["energy_level"],
-        mode="lines",
-        name="Energy",
-        line=dict(width=2, color="#4CAF50"),
-    ))
+    fig.add_trace(
+        go.Scatter(
+            x=df["step"],
+            y=df["energy_level"],
+            mode="lines",
+            name="Energy",
+            line=dict(width=2, color="#4CAF50"),
+        )
+    )
 
     # Highlight developmental stage changes
     stage_changes = []
     prev_stage = None
     for i, row in df.iterrows():
         if row["developmental_stage"] != prev_stage:
-            stage_changes.append({
-                "step": row["step"],
-                "stage": row["developmental_stage"],
-            })
+            stage_changes.append(
+                {
+                    "step": row["step"],
+                    "stage": row["developmental_stage"],
+                }
+            )
             prev_stage = row["developmental_stage"]
 
     for change in stage_changes:
@@ -1179,6 +1672,7 @@ def update_development_graph(n_intervals):
 
     return fig
 
+
 # Callback to update the emotions graph
 @app.callback(
     Output("emotions-graph", "figure"),
@@ -1206,7 +1700,9 @@ def update_emotions_graph(n_intervals):
     df = df.groupby(["step", "emotion"])["intensity"].max().reset_index()
 
     # Pivot to get emotions as columns
-    df_pivot = df.pivot(index="step", columns="emotion", values="intensity").reset_index()
+    df_pivot = df.pivot(
+        index="step", columns="emotion", values="intensity"
+    ).reset_index()
     df_pivot = df_pivot.fillna(0)  # Fill NaN with 0
 
     # Create figure
@@ -1214,28 +1710,30 @@ def update_emotions_graph(n_intervals):
 
     # Add a trace for each emotion
     colors = {
-        "joy": "#FFD700",         # Gold
-        "sadness": "#4682B4",     # Steel Blue
-        "anger": "#DC143C",       # Crimson
-        "fear": "#800080",        # Purple
-        "disgust": "#006400",     # Dark Green
-        "surprise": "#FF8C00",    # Dark Orange
-        "trust": "#20B2AA",       # Light Sea Green
-        "anticipation": "#FF69B4",# Hot Pink
-        "confusion": "#708090",   # Slate Gray
-        "interest": "#7B68EE",    # Medium Slate Blue
-        "boredom": "#A9A9A9",     # Dark Gray
+        "joy": "#FFD700",  # Gold
+        "sadness": "#4682B4",  # Steel Blue
+        "anger": "#DC143C",  # Crimson
+        "fear": "#800080",  # Purple
+        "disgust": "#006400",  # Dark Green
+        "surprise": "#FF8C00",  # Dark Orange
+        "trust": "#20B2AA",  # Light Sea Green
+        "anticipation": "#FF69B4",  # Hot Pink
+        "confusion": "#708090",  # Slate Gray
+        "interest": "#7B68EE",  # Medium Slate Blue
+        "boredom": "#A9A9A9",  # Dark Gray
     }
 
     for emotion in df_pivot.columns:
         if emotion != "step":
-            fig.add_trace(go.Scatter(
-                x=df_pivot["step"],
-                y=df_pivot[emotion],
-                mode="lines",
-                name=emotion.capitalize(),
-                line=dict(width=2, color=colors.get(emotion, "#CCCCCC")),
-            ))
+            fig.add_trace(
+                go.Scatter(
+                    x=df_pivot["step"],
+                    y=df_pivot[emotion],
+                    mode="lines",
+                    name=emotion.capitalize(),
+                    line=dict(width=2, color=colors.get(emotion, "#CCCCCC")),
+                )
+            )
 
     # Update layout
     fig.update_layout(
@@ -1255,6 +1753,7 @@ def update_emotions_graph(n_intervals):
     )
 
     return fig
+
 
 # Callback to update the memory graph
 @app.callback(
@@ -1282,21 +1781,25 @@ def update_memory_graph(n_intervals):
     # Create figure
     fig = go.Figure()
 
-    fig.add_trace(go.Scatter(
-        x=df["step"],
-        y=df["short_term"],
-        mode="lines",
-        name="Short-term Memory",
-        line=dict(width=2, color="#9d68f2"),
-    ))
+    fig.add_trace(
+        go.Scatter(
+            x=df["step"],
+            y=df["short_term"],
+            mode="lines",
+            name="Short-term Memory",
+            line=dict(width=2, color="#9d68f2"),
+        )
+    )
 
-    fig.add_trace(go.Scatter(
-        x=df["step"],
-        y=df["long_term"],
-        mode="lines",
-        name="Long-term Memory",
-        line=dict(width=2, color="#3b8dff"),
-    ))
+    fig.add_trace(
+        go.Scatter(
+            x=df["step"],
+            y=df["long_term"],
+            mode="lines",
+            name="Long-term Memory",
+            line=dict(width=2, color="#3b8dff"),
+        )
+    )
 
     # Update layout
     fig.update_layout(
@@ -1316,6 +1819,7 @@ def update_memory_graph(n_intervals):
     )
 
     return fig
+
 
 # Callback to update the developmental milestones
 @app.callback(
@@ -1354,14 +1858,24 @@ def update_milestones(n_intervals):
             # Calculate percentage
             percentage = min(100, int((current_value / threshold) * 100))
 
-            content.append(html.Div([
-                html.Span(f"{metric.replace('_', ' ').title()}: {current_value}/{threshold}"),
-                dbc.Progress(
-                    value=percentage,
-                    style={"height": "10px", "borderRadius": "5px", "marginBottom": "10px"},
-                    color="info",
-                ),
-            ]))
+            content.append(
+                html.Div(
+                    [
+                        html.Span(
+                            f"{metric.replace('_', ' ').title()}: {current_value}/{threshold}"
+                        ),
+                        dbc.Progress(
+                            value=percentage,
+                            style={
+                                "height": "10px",
+                                "borderRadius": "5px",
+                                "marginBottom": "10px",
+                            },
+                            color="info",
+                        ),
+                    ]
+                )
+            )
     else:
         content.append(html.Div("Reached maximum developmental stage."))
 
@@ -1378,6 +1892,7 @@ def update_milestones(n_intervals):
         content.append(html.Div(f"Total vocabulary size: {len(vocab)} words"))
 
     return content
+
 
 # Callback to update the beliefs system
 @app.callback(
@@ -1396,40 +1911,51 @@ def update_beliefs(n_intervals):
 
     # Table of beliefs
     table_header = [
-        html.Thead(html.Tr([
-            html.Th("Subject"),
-            html.Th("Predicate"),
-            html.Th("Object"),
-            html.Th("Confidence"),
-            html.Th("Stage Formed"),
-        ])),
+        html.Thead(
+            html.Tr(
+                [
+                    html.Th("Subject"),
+                    html.Th("Predicate"),
+                    html.Th("Object"),
+                    html.Th("Confidence"),
+                    html.Th("Stage Formed"),
+                ]
+            )
+        ),
     ]
 
     rows = []
     for belief in beliefs[-10:]:  # Show last 10 beliefs
         confidence_percent = f"{int(belief.confidence * 100)}%"
 
-        rows.append(html.Tr([
-            html.Td(belief.subject),
-            html.Td(belief.predicate),
-            html.Td(belief.object),
-            html.Td(confidence_percent),
-            html.Td(belief.developmental_stage.name),
-        ]))
+        rows.append(
+            html.Tr(
+                [
+                    html.Td(belief.subject),
+                    html.Td(belief.predicate),
+                    html.Td(belief.object),
+                    html.Td(confidence_percent),
+                    html.Td(belief.developmental_stage.name),
+                ]
+            )
+        )
 
     table_body = [html.Tbody(rows)]
 
-    content.append(dbc.Table(
-        table_header + table_body,
-        bordered=False,
-        striped=True,
-        size="sm",
-        style={"backgroundColor": "transparent"},
-    ))
+    content.append(
+        dbc.Table(
+            table_header + table_body,
+            bordered=False,
+            striped=True,
+            size="sm",
+            style={"backgroundColor": "transparent"},
+        )
+    )
 
     content.append(html.Div(f"Total beliefs formed: {len(beliefs)}"))
 
     return content
+
 
 # Callback to update the needs status
 @app.callback(
@@ -1448,26 +1974,51 @@ def update_needs(n_intervals):
 
     for name, need in needs.items():
         # Calculate color gradient based on intensity
-        color = "#3b8dff" if need.intensity < 0.7 else "#ff9800" if need.intensity < 0.9 else "#f44336"
+        color = (
+            "#3b8dff"
+            if need.intensity < 0.7
+            else "#ff9800"
+            if need.intensity < 0.9
+            else "#f44336"
+        )
 
-        content.append(html.Div([
-            html.Span(f"{name.capitalize()}: "),
-            dbc.Progress(
-                value=int(need.intensity * 100),
-                style={"height": "10px", "borderRadius": "5px", "marginBottom": "5px"},
-                color="info" if need.intensity < 0.7 else "warning" if need.intensity < 0.9 else "danger",
-            ),
-            html.Div([
-                html.Span("Satisfaction: "),
-                dbc.Progress(
-                    value=int(need.satisfaction_level * 100),
-                    style={"height": "6px", "borderRadius": "3px", "marginBottom": "15px"},
-                    color="success",
-                ),
-            ]),
-        ]))
+        content.append(
+            html.Div(
+                [
+                    html.Span(f"{name.capitalize()}: "),
+                    dbc.Progress(
+                        value=int(need.intensity * 100),
+                        style={
+                            "height": "10px",
+                            "borderRadius": "5px",
+                            "marginBottom": "5px",
+                        },
+                        color="info"
+                        if need.intensity < 0.7
+                        else "warning"
+                        if need.intensity < 0.9
+                        else "danger",
+                    ),
+                    html.Div(
+                        [
+                            html.Span("Satisfaction: "),
+                            dbc.Progress(
+                                value=int(need.satisfaction_level * 100),
+                                style={
+                                    "height": "6px",
+                                    "borderRadius": "3px",
+                                    "marginBottom": "15px",
+                                },
+                                color="success",
+                            ),
+                        ]
+                    ),
+                ]
+            )
+        )
 
     return content
+
 
 # Callback to update the error log
 @app.callback(
@@ -1483,9 +2034,12 @@ def update_error_log(json_data):
         return "System ready. No errors reported."
 
     # Format errors as text
-    error_text = "\n".join([f"[{i+1}] {error}" for i, error in enumerate(errors[-10:])])
+    error_text = "\n".join(
+        [f"[{i + 1}] {error}" for i, error in enumerate(errors[-10:])]
+    )
 
     return error_text
+
 
 # Callback for start button
 @app.callback(
@@ -1506,6 +2060,7 @@ def start_simulation(n_clicks):
 
     return [dcc.Interval(id="update-interval", interval=1000, n_intervals=0)]
 
+
 # Callback for stop button
 @app.callback(
     Output("interval-container", "children", allow_duplicate=True),
@@ -1519,6 +2074,7 @@ def stop_simulation(n_clicks):
         dashboard_data.is_running = False
 
     return [dcc.Interval(id="update-interval", interval=1000, n_intervals=0)]
+
 
 # Callback for save button
 @app.callback(
@@ -1535,18 +2091,28 @@ def save_models_callback(n_clicks):
 
     return "System ready."
 
+
 # Callback for applying configuration
 @app.callback(
     Output("error-log", "children", allow_duplicate=True),
     [Input("apply-config-button", "n_clicks")],
-    [State("step-interval-slider", "value"),
-     State("save-interval-input", "value"),
-     State("checkpoint-count-input", "value"),
-     State("save-directory-input", "value"),
-     State("auto-backup-checkbox", "value")],
+    [
+        State("step-interval-slider", "value"),
+        State("save-interval-input", "value"),
+        State("checkpoint-count-input", "value"),
+        State("save-directory-input", "value"),
+        State("auto-backup-checkbox", "value"),
+    ],
     prevent_initial_call=True,
 )
-def apply_configuration(n_clicks, step_interval, save_interval, checkpoint_count, save_directory, auto_backup):
+def apply_configuration(
+    n_clicks,
+    step_interval,
+    save_interval,
+    checkpoint_count,
+    save_directory,
+    auto_backup,
+):
     if n_clicks:
         try:
             # Update dashboard data using Pydantic model
@@ -1567,6 +2133,7 @@ def apply_configuration(n_clicks, step_interval, save_interval, checkpoint_count
             return f"Error applying configuration: {e!s}"
 
     return "System ready."
+
 
 if __name__ == "__main__":
     # Set up logging

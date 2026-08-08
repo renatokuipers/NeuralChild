@@ -6,7 +6,6 @@ awareness and self-model that develops over time.
 
 import logging
 import random
-from typing import Optional
 
 import torch
 from torch import nn
@@ -17,24 +16,29 @@ from core.schemas import DevelopmentalStage, NetworkMessage, TextOutput, VectorO
 # Configure logging
 logger = logging.getLogger(__name__)
 
+
 class ConsciousnessNetwork(NeuralNetwork):
     """Consciousness network that integrates awareness from other networks.
-    
-    Uses a recurrent neural network (RNN) architecture to maintain 
+
+    Uses a recurrent neural network (RNN) architecture to maintain
     a sense of continuity and awareness over time, integrating inputs
     from all other networks into a unified conscious experience.
     """
 
-    def __init__(self, input_dim: int = 64, hidden_dim: int = 128, output_dim: int = 64):
+    def __init__(
+        self, input_dim: int = 64, hidden_dim: int = 128, output_dim: int = 64
+    ):
         """Initialize the consciousness network.
-        
+
         Args:
             input_dim: Dimension of input vectors
             hidden_dim: Dimension of hidden layers
             output_dim: Dimension of output vectors
 
         """
-        super().__init__(name="consciousness", input_dim=input_dim, output_dim=output_dim)
+        super().__init__(
+            name="consciousness", input_dim=input_dim, output_dim=output_dim
+        )
 
         # RNN for processing sequential inputs
         self.rnn = nn.RNN(
@@ -74,20 +78,22 @@ class ConsciousnessNetwork(NeuralNetwork):
         self.network_activations = {}
 
         # Initialize state parameters
-        self.update_state({
-            "awareness_level": self.awareness_level,
-            "attending_to": self.attending_to,
-            "self_awareness": self.self_awareness,
-            "integration_capacity": self.integration_capacity,
-            "recent_inputs": [],
-        })
+        self.update_state(
+            {
+                "awareness_level": self.awareness_level,
+                "attending_to": self.attending_to,
+                "self_awareness": self.self_awareness,
+                "integration_capacity": self.integration_capacity,
+                "recent_inputs": [],
+            }
+        )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Forward pass of the neural network.
-        
+
         Args:
             x: Input tensor
-            
+
         Returns:
             Output tensor representing conscious state
 
@@ -119,19 +125,22 @@ class ConsciousnessNetwork(NeuralNetwork):
             result = result * (1 - self.self_awareness) + self_component
 
         # Update state
-        self.update_state({
-            "awareness_level": self.awareness_level,
-            "recent_inputs": self.state.parameters.get("recent_inputs", [])[-4:] + [x.detach().mean().item()],
-        })
+        self.update_state(
+            {
+                "awareness_level": self.awareness_level,
+                "recent_inputs": self.state.parameters.get("recent_inputs", [])[-4:]
+                + [x.detach().mean().item()],
+            }
+        )
 
         return result
 
-    def process_message(self, message: NetworkMessage) -> Optional[VectorOutput]:
+    def process_message(self, message: NetworkMessage) -> VectorOutput | None:
         """Process a message from another neural network.
-        
+
         Args:
             message: Message from another network
-            
+
         Returns:
             Optional vector output as response
 
@@ -141,7 +150,7 @@ class ConsciousnessNetwork(NeuralNetwork):
             # Adjust vector to expected size
             vector_data = message.content["vector_data"]
             if len(vector_data) > self.input_dim:
-                vector_data = vector_data[:self.input_dim]
+                vector_data = vector_data[: self.input_dim]
             elif len(vector_data) < self.input_dim:
                 vector_data = vector_data + [0.0] * (self.input_dim - len(vector_data))
 
@@ -165,7 +174,9 @@ class ConsciousnessNetwork(NeuralNetwork):
         if message.message_type == "activation_update":
             # Update network activation without processing
             if "activation" in message.content:
-                self.network_activations[message.sender] = float(message.content["activation"])
+                self.network_activations[message.sender] = float(
+                    message.content["activation"]
+                )
                 self._integrate_activations()
 
                 # Return simple acknowledgment
@@ -201,7 +212,7 @@ class ConsciousnessNetwork(NeuralNetwork):
 
     def autonomous_step(self) -> None:
         """Autonomous processing step.
-        
+
         This function is called periodically by the mind to allow
         the network to perform autonomous processing.
         """
@@ -217,10 +228,12 @@ class ConsciousnessNetwork(NeuralNetwork):
         self.awareness_level = max(0.1, min(1.0, self.awareness_level + fluctuation))
 
         # Update state
-        self.update_state({
-            "awareness_level": self.awareness_level,
-            "network_activations": self.network_activations,
-        })
+        self.update_state(
+            {
+                "awareness_level": self.awareness_level,
+                "network_activations": self.network_activations,
+            }
+        )
 
         # Send consciousness update to mind
         consciousness_update = NetworkMessage(
@@ -236,9 +249,12 @@ class ConsciousnessNetwork(NeuralNetwork):
         )
 
         # Add to state for the mind to retrieve
-        self.update_state({
-            "pending_messages": self.state.parameters.get("pending_messages", []) + [consciousness_update.to_dict()],
-        })
+        self.update_state(
+            {
+                "pending_messages": self.state.parameters.get("pending_messages", [])
+                + [consciousness_update.to_dict()],
+            }
+        )
 
     def _integrate_activations(self) -> None:
         """Integrate activations from all networks into consciousness."""
@@ -271,10 +287,10 @@ class ConsciousnessNetwork(NeuralNetwork):
 
     def update_developmental_stage(self, stage: DevelopmentalStage) -> None:
         """Update the developmental stage of the network.
-        
+
         As the network develops, self-awareness and integration capacity
         increase, simulating the development of consciousness.
-        
+
         Args:
             stage: New developmental stage
 
@@ -310,29 +326,39 @@ class ConsciousnessNetwork(NeuralNetwork):
             self.integration_capacity = stage_values[stage]["integration_capacity"]
 
             # Increase hidden state dimensionality for more complex stages
-            if stage.value >= DevelopmentalStage.CHILD.value and self.hidden is not None:
+            if (
+                stage.value >= DevelopmentalStage.CHILD.value
+                and self.hidden is not None
+            ):
                 # Reset hidden state to allow for growth
                 self.hidden = None
 
-            self.update_state({
-                "self_awareness": self.self_awareness,
-                "integration_capacity": self.integration_capacity,
-            })
+            self.update_state(
+                {
+                    "self_awareness": self.self_awareness,
+                    "integration_capacity": self.integration_capacity,
+                }
+            )
 
         logger.info(f"Consciousness network updated to {stage.name} stage")
 
     def generate_text_output(self) -> TextOutput:
         """Generate a human-readable text output from the neural network.
-        
+
         Returns:
             Text representation of the network's current state
 
         """
         # Generate text based on current state
-        awareness_text = "fully aware" if self.awareness_level > 0.8 else \
-                        "aware" if self.awareness_level > 0.5 else \
-                        "partially aware" if self.awareness_level > 0.2 else \
-                        "barely aware"
+        awareness_text = (
+            "fully aware"
+            if self.awareness_level > 0.8
+            else "aware"
+            if self.awareness_level > 0.5
+            else "partially aware"
+            if self.awareness_level > 0.2
+            else "barely aware"
+        )
 
         attending_to = self.state.parameters.get("attending_to", None)
         attending_text = f" and focusing on {attending_to}" if attending_to else ""
@@ -362,13 +388,15 @@ class ConsciousnessNetwork(NeuralNetwork):
             confidence=self.awareness_level,
         )
 
-    def clone_with_growth(self, growth_factor: float = 1.2, min_dim: int = 8) -> "ConsciousnessNetwork":
+    def clone_with_growth(
+        self, growth_factor: float = 1.2, min_dim: int = 8
+    ) -> "ConsciousnessNetwork":
         """Create a larger clone of this network with scaled dimensions.
-        
+
         Args:
             growth_factor: Factor to scale dimensions by
             min_dim: Minimum dimension size to ensure
-            
+
         Returns:
             Larger clone of this network with scaled dimensions
 
@@ -398,15 +426,17 @@ class ConsciousnessNetwork(NeuralNetwork):
 
         # Record growth event
         new_network.growth_history = copy.deepcopy(self.growth_history)
-        new_network.growth_history.append(NeuralGrowthRecord(
-            event_type="network_expansion",
-            layer_affected="all",
-            old_shape=[self.input_dim, self.rnn.hidden_size, self.output_dim],
-            new_shape=[new_input_dim, new_hidden_dim, new_output_dim],
-            growth_factor=growth_factor,
-            trigger="clone_with_growth",
-            developmental_stage=self.developmental_stage,
-        ))
+        new_network.growth_history.append(
+            NeuralGrowthRecord(
+                event_type="network_expansion",
+                layer_affected="all",
+                old_shape=[self.input_dim, self.rnn.hidden_size, self.output_dim],
+                new_shape=[new_input_dim, new_hidden_dim, new_output_dim],
+                growth_factor=growth_factor,
+                trigger="clone_with_growth",
+                developmental_stage=self.developmental_stage,
+            )
+        )
 
         # Reset hidden state to accommodate new dimensions
         new_network.hidden = None

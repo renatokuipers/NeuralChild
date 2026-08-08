@@ -7,7 +7,7 @@ establishing a consistent interface for component interaction.
 import uuid
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, List
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -15,28 +15,29 @@ from pydantic import BaseModel, Field
 class DevelopmentalStage(Enum):
     """Developmental stages for the artificial mind."""
 
-    INFANT = 1      # 0-12 months equivalent
-    TODDLER = 2     # 1-3 years equivalent
-    CHILD = 3       # 3-12 years equivalent
+    INFANT = 1  # 0-12 months equivalent
+    TODDLER = 2  # 1-3 years equivalent
+    CHILD = 3  # 3-12 years equivalent
     ADOLESCENT = 4  # 12-18 years equivalent
-    MATURE = 5      # 18+ years equivalent
+    MATURE = 5  # 18+ years equivalent
+
 
 class NetworkMessage(BaseModel):
     """Message passed between neural networks.
-    
+
     These messages form the basis of inter-network communication,
     allowing different parts of the mind to coordinate.
     """
 
     sender: str
     receiver: str
-    content: Dict[str, Any]
+    content: dict[str, Any]
     message_type: str = "standard"  # standard, emotional, belief, etc.
     timestamp: datetime = Field(default_factory=datetime.now)
     priority: float = 1.0  # Higher values indicate higher priority
     developmental_stage: DevelopmentalStage = DevelopmentalStage.INFANT
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert the message to a dictionary."""
         return {
             "sender": self.sender,
@@ -48,9 +49,10 @@ class NetworkMessage(BaseModel):
             "developmental_stage": self.developmental_stage.name,
         }
 
+
 class NetworkState(BaseModel):
     """State of a neural network.
-    
+
     Maintains the current state of a neural network, including
     its developmental weights and operational parameters.
     """
@@ -58,33 +60,36 @@ class NetworkState(BaseModel):
     name: str
     active: bool = True
     last_update: datetime = Field(default_factory=datetime.now)
-    parameters: Dict[str, Any] = Field(default_factory=dict)
-    developmental_weights: Dict[DevelopmentalStage, float] = Field(default_factory=dict)
+    parameters: dict[str, Any] = Field(default_factory=dict)
+    developmental_weights: dict[DevelopmentalStage, float] = Field(default_factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert the state to a dictionary for serialization."""
         return {
             "name": self.name,
             "active": self.active,
             "last_update": self.last_update.isoformat(),
             "parameters": self.parameters,
-            "developmental_weights": {k.name: v for k, v in self.developmental_weights.items()},
+            "developmental_weights": {
+                k.name: v for k, v in self.developmental_weights.items()
+            },
         }
+
 
 class Memory(BaseModel):
     """Memory representation for storing experiences.
-    
+
     Memories are encoded experiences that can be stored and recalled
     by the mind, forming the basis for learning and development.
     """
 
     id: str
-    content: Dict[str, Any]
+    content: dict[str, Any]
     creation_time: datetime = Field(default_factory=datetime.now)
     last_access_time: datetime = Field(default_factory=datetime.now)
     strength: float = 1.0  # How strongly the memory is retained (decays over time)
     emotional_valence: float = 0.0  # Emotional significance (-1 to 1)
-    tags: List[str] = Field(default_factory=list)
+    tags: list[str] = Field(default_factory=list)
     developmental_stage: DevelopmentalStage = DevelopmentalStage.INFANT
 
     def access(self) -> None:
@@ -101,21 +106,23 @@ class Memory(BaseModel):
         """Check if the memory has been forgotten (strength below threshold)."""
         return self.strength < 0.1
 
+
 class VectorOutput(BaseModel):
     """Vector output from a neural network.
-    
+
     Represents numerical output from a neural network for
     machine consumption and processing.
     """
 
     source: str
-    data: List[float]
+    data: list[float]
     timestamp: datetime = Field(default_factory=datetime.now)
     developmental_stage: DevelopmentalStage = DevelopmentalStage.INFANT
 
+
 class TextOutput(BaseModel):
     """Text output from a neural network for human consumption.
-    
+
     Represents natural language output that can be understood
     by humans interacting with the system.
     """
@@ -126,9 +133,10 @@ class TextOutput(BaseModel):
     timestamp: datetime = Field(default_factory=datetime.now)
     developmental_stage: DevelopmentalStage = DevelopmentalStage.INFANT
 
+
 class Belief(BaseModel):
     """Belief representation in the mind.
-    
+
     Beliefs are mental constructs that represent the mind's
     understanding of concepts and relationships in the world.
 
@@ -143,7 +151,9 @@ class Belief(BaseModel):
     confidence: float = 0.5
     creation_time: datetime = Field(default_factory=datetime.now)
     last_update_time: datetime = Field(default_factory=datetime.now)
-    supporting_memories: List[str] = Field(default_factory=list)  # IDs of supporting memories
+    supporting_memories: list[str] = Field(
+        default_factory=list
+    )  # IDs of supporting memories
     developmental_stage: DevelopmentalStage = DevelopmentalStage.INFANT
 
     def update_confidence(self, new_evidence: float) -> None:
@@ -164,9 +174,10 @@ class Belief(BaseModel):
 
         return f"{confidence_text}{self.subject} {self.predicate} {self.object}"
 
+
 class Need(BaseModel):
     """Representation of a need in the mind.
-    
+
     Needs drive behavior and motivation, creating
     the impetus for action and learning.
     """

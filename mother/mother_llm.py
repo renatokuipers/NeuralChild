@@ -1,13 +1,13 @@
 """Mother LLM component that interacts with the mind simulation.
 
-This module implements the nurturing mother figure that responds to the observable 
+This module implements the nurturing mother figure that responds to the observable
 behaviors of the developing artificial mind and provides appropriate care and stimulation.
 """
 
 import logging
 import random
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -19,16 +19,17 @@ from utils.llm_module import chat_completion
 # Configure logging
 logger = logging.getLogger(__name__)
 
+
 class MotherResponse(BaseModel):
     """Response from the mother LLM."""
 
     understanding: str  # Mother's interpretation of the mind's state
-    response: str       # Nurturing response to the mind
-    action: str         # Specific action to take (comfort, teach, play, etc.)
-    development_focus: Optional[str] = None  # Area of development being targeted
+    response: str  # Nurturing response to the mind
+    action: str  # Specific action to take (comfort, teach, play, etc.)
+    development_focus: str | None = None  # Area of development being targeted
     timestamp: datetime = Field(default_factory=datetime.now)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary representation."""
         return {
             "understanding": self.understanding,
@@ -38,16 +39,17 @@ class MotherResponse(BaseModel):
             "timestamp": self.timestamp.isoformat(),
         }
 
+
 class MotherLLM:
     """Mother LLM component that interacts with the mind simulation.
-    
+
     The mother observes the child's behaviors and responds with nurturing
     care appropriate to the child's developmental stage, needs, and behaviors.
     """
 
     def __init__(self):
         """Initialize the Mother LLM."""
-        self.interaction_history: List[Dict[str, Any]] = []
+        self.interaction_history: list[dict[str, Any]] = []
         self.response_templates = self._load_response_templates()
         self.last_response_time = datetime.now()
         self.response_interval = 10.0  # seconds between responses
@@ -68,36 +70,72 @@ class MotherLLM:
                 "physical": ["tummy time", "holding", "rocking"],
             },
             DevelopmentalStage.TODDLER: {
-                "language": ["simple conversations", "naming actions", "asking questions"],
+                "language": [
+                    "simple conversations",
+                    "naming actions",
+                    "asking questions",
+                ],
                 "emotional": ["validating feelings", "setting boundaries", "routines"],
                 "cognitive": ["puzzles", "sorting", "simple problem-solving"],
                 "physical": ["free play", "exploration", "climbing"],
             },
             DevelopmentalStage.CHILD: {
                 "language": ["complex conversations", "storytelling", "explaining"],
-                "emotional": ["discussing feelings", "empathy building", "self-regulation"],
-                "cognitive": ["logical problems", "questions why", "conceptual thinking"],
+                "emotional": [
+                    "discussing feelings",
+                    "empathy building",
+                    "self-regulation",
+                ],
+                "cognitive": [
+                    "logical problems",
+                    "questions why",
+                    "conceptual thinking",
+                ],
                 "physical": ["games with rules", "skills practice", "coordination"],
             },
             DevelopmentalStage.ADOLESCENT: {
                 "language": ["abstract discussions", "metacognition", "hypotheticals"],
-                "emotional": ["emotional independence", "identity formation", "guidance"],
-                "cognitive": ["abstract concepts", "critical thinking", "creative exploration"],
-                "physical": ["independence", "complex skills", "self-directed activities"],
+                "emotional": [
+                    "emotional independence",
+                    "identity formation",
+                    "guidance",
+                ],
+                "cognitive": [
+                    "abstract concepts",
+                    "critical thinking",
+                    "creative exploration",
+                ],
+                "physical": [
+                    "independence",
+                    "complex skills",
+                    "self-directed activities",
+                ],
             },
             DevelopmentalStage.MATURE: {
-                "language": ["philosophical dialogue", "mentorship", "collaborative discussion"],
-                "emotional": ["emotional equality", "mutual support", "complex emotional navigation"],
-                "cognitive": ["advanced concepts", "wisdom sharing", "intellectual partnership"],
+                "language": [
+                    "philosophical dialogue",
+                    "mentorship",
+                    "collaborative discussion",
+                ],
+                "emotional": [
+                    "emotional equality",
+                    "mutual support",
+                    "complex emotional navigation",
+                ],
+                "cognitive": [
+                    "advanced concepts",
+                    "wisdom sharing",
+                    "intellectual partnership",
+                ],
                 "physical": ["full autonomy", "mutual activities", "skill mastery"],
             },
         }
 
         logger.info("Mother LLM initialized")
 
-    def _load_response_templates(self) -> Dict[str, Dict[str, List[str]]]:
+    def _load_response_templates(self) -> dict[str, dict[str, list[str]]]:
         """Load response templates for different developmental stages and needs.
-        
+
         Returns:
             Dictionary of response templates
 
@@ -238,22 +276,24 @@ class MotherLLM:
 
         return templates
 
-    def observe_and_respond(self, mind: Mind) -> Optional[MotherResponse]:
+    def observe_and_respond(self, mind: Mind) -> MotherResponse | None:
         """Observe the mind's external state and provide a nurturing response.
-        
+
         This method simulates a mother observing her child's behavior and responding
         appropriately based on the child's developmental stage, apparent needs,
         and current behavioral cues.
-        
+
         Args:
             mind: Mind object to observe
-            
+
         Returns:
             Mother's response or None if no response is warranted
 
         """
         current_time = datetime.now()
-        time_since_last_response = (current_time - self.last_response_time).total_seconds()
+        time_since_last_response = (
+            current_time - self.last_response_time
+        ).total_seconds()
 
         # Don't respond too frequently - natural pauses in interaction
         if time_since_last_response < self.response_interval:
@@ -294,11 +334,13 @@ class MotherLLM:
 
         if response:
             # Add to interaction history
-            self.interaction_history.append({
-                "observation": observable_state.to_dict(),
-                "response": response.to_dict(),
-                "timestamp": datetime.now().isoformat(),
-            })
+            self.interaction_history.append(
+                {
+                    "observation": observable_state.to_dict(),
+                    "response": response.to_dict(),
+                    "timestamp": datetime.now().isoformat(),
+                }
+            )
 
             # Limit history size
             if len(self.interaction_history) > 100:
@@ -311,10 +353,10 @@ class MotherLLM:
 
     def _should_respond(self, state: ObservableState) -> bool:
         """Determine whether the mother should respond to the current state.
-        
+
         Args:
             state: Observable state of the mind
-            
+
         Returns:
             True if the mother should respond, False otherwise
 
@@ -326,7 +368,10 @@ class MotherLLM:
 
         # Always respond to strong negative emotions
         for emotion in state.recent_emotions:
-            if emotion.name.value in ["fear", "sadness", "anger"] and emotion.intensity > 0.6:
+            if (
+                emotion.name.value in ["fear", "sadness", "anger"]
+                and emotion.intensity > 0.6
+            ):
                 return True
 
         # Always respond to vocalizations
@@ -348,10 +393,10 @@ class MotherLLM:
 
     def _construct_situation(self, state: ObservableState) -> str:
         """Convert observable state into a natural description for the LLM.
-        
+
         Args:
             state: Observable state of the mind
-            
+
         Returns:
             Natural language description of the situation
 
@@ -414,10 +459,10 @@ class MotherLLM:
 
     def _determine_response_type(self, state: ObservableState) -> str:
         """Determine the appropriate response type based on observed state.
-        
+
         Args:
             state: Observable state of the mind
-            
+
         Returns:
             Response type (comfort, play, teach, etc.)
 
@@ -464,10 +509,10 @@ class MotherLLM:
 
     def _select_development_focus(self, state: ObservableState) -> str:
         """Select an area of development to focus on for this interaction.
-        
+
         Args:
             state: Observable state of the mind
-            
+
         Returns:
             Development focus area (language, emotional, cognitive, physical)
 
@@ -524,11 +569,11 @@ class MotherLLM:
 
     def _select_technique(self, stage: DevelopmentalStage, focus: str) -> str:
         """Select a specific developmental technique for the focus area and stage.
-        
+
         Args:
             stage: Developmental stage
             focus: Focus area
-            
+
         Returns:
             Specific technique to use
 
@@ -541,7 +586,11 @@ class MotherLLM:
             for s in self.developmental_techniques:
                 for f in self.developmental_techniques[s]:
                     all_techniques.extend(self.developmental_techniques[s][f])
-            return random.choice(all_techniques) if all_techniques else "general interaction"
+            return (
+                random.choice(all_techniques)
+                if all_techniques
+                else "general interaction"
+            )
 
         return random.choice(techniques)
 
@@ -552,16 +601,16 @@ class MotherLLM:
         response_type: str,
         development_focus: str,
         technique: str,
-    ) -> Optional[MotherResponse]:
+    ) -> MotherResponse | None:
         """Generate a response to the observed situation.
-        
+
         Args:
             situation: Description of the observable situation
             observable_state: Observable state of the mind
             response_type: Type of response to generate
             development_focus: Developmental focus area
             technique: Specific technique to use
-            
+
         Returns:
             Generated response or None if generation fails
 
@@ -610,7 +659,12 @@ class MotherLLM:
                 structured_output=True,
             )
 
-            if response and "understanding" in response and "response" in response and "action" in response:
+            if (
+                response
+                and "understanding" in response
+                and "response" in response
+                and "action" in response
+            ):
                 # Create a MotherResponse from the LLM response
                 mother_response = MotherResponse(
                     understanding=response["understanding"],
@@ -622,7 +676,9 @@ class MotherLLM:
                 return mother_response
 
             # Fallback to template if LLM fails
-            logger.warning("LLM response did not contain required fields, falling back to template")
+            logger.warning(
+                "LLM response did not contain required fields, falling back to template"
+            )
             return self._fallback_response(
                 observable_state.developmental_stage,
                 response_type,
@@ -637,20 +693,25 @@ class MotherLLM:
                 development_focus,
             )
 
-    def _get_template_response(self, stage: DevelopmentalStage, response_type: str) -> Optional[str]:
+    def _get_template_response(
+        self, stage: DevelopmentalStage, response_type: str
+    ) -> str | None:
         """Get a template response for the given stage and type.
-        
+
         Args:
             stage: Developmental stage
             response_type: Type of response
-            
+
         Returns:
             Template response or None if no suitable template
 
         """
         stage_name = stage.name
 
-        if stage_name in self.response_templates and response_type in self.response_templates[stage_name]:
+        if (
+            stage_name in self.response_templates
+            and response_type in self.response_templates[stage_name]
+        ):
             templates = self.response_templates[stage_name][response_type]
             if templates:
                 return random.choice(templates)
@@ -664,12 +725,12 @@ class MotherLLM:
         development_focus: str,
     ) -> MotherResponse:
         """Generate a fallback response when other methods fail.
-        
+
         Args:
             stage: Developmental stage
             response_type: Type of response
             development_focus: Developmental focus area
-            
+
         Returns:
             Fallback response
 
