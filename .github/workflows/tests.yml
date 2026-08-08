@@ -47,3 +47,45 @@ jobs:
       - name: Report
         if: always()
         run: tail -20 pytest.out || true
+
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # gitleaks scans the whole history, not just the tip
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - uses: astral-sh/setup-uv@v5
+
+      # Only the two tools these checks need. This job never imports the project,
+      # so it skips torch and stays fast.
+      - name: Install
+        run: uv pip install --system ruff pip-audit
+
+      - name: Formatting
+        run: ruff format --check .
+
+      # A ratchet, not a full lint. `ruff check .` reports 419 violations — the
+      # pathlib, logging-format and complexity families, plus the F821 undefined
+      # names that #6 and #9 own — so it cannot gate yet. These families are at
+      # zero today and this keeps them there. Add F821 when #6 and #9 land, and
+      # F401 once cli.py stops importing colorama.Back unused.
+      - name: Lint the rules already at zero
+        run: ruff check --select I,F811,E4,E7,E9 .
+
+      # Covers what requirements.txt pins. The runtime dependencies declared in
+      # pyproject are NOT audited here: that needs the project to build, which
+      # fails (#10).
+      - name: Dependency vulnerabilities
+        run: pip-audit -r requirements.txt
+
+      # Pinned to the version the audit runbook uses locally, rather than an
+      # action, so CI and a developer's machine scan with identical rules.
+      - name: Secrets
+        run: |
+          curl -sSL https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz | tar -xz gitleaks
+          ./gitleaks git -v .
