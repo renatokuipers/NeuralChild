@@ -112,8 +112,20 @@ of invariants.
 synthetic emotion message carrying three emotions moves `emotions_experienced` 0 → 3, exactly the
 INFANT gate, so the gate is close. But wiring `process_message` alone is **not sufficient**: of
 the inter-network edges, perception→emotions delivers, perception→thoughts delivers only at
-TODDLER and above, language→consciousness has no handler branch on the receiver, and
-thoughts→mind raises on the `Belief.id` defect above.
+TODDLER and above, and language→consciousness has no handler branch on the receiver. The
+thoughts→mind edge no longer raises: #3 landed, so a belief formed there carries an identity and
+survives into the network instead of dying in a log line.
+
+**The dashboard is being rebuilt, not repaired.** #11 — make the Dash UI start on Dash 4 — is
+closed as superseded. Repairing it in place would preserve the design Reflex removes: thirteen
+callbacks fanning state through a hidden div on a one-second interval, a shape that exists only
+because Dash has no server-side state. Two tickets replace it. #19 lifts the simulation runtime —
+bootstrap, environmental input, the mother's turn, history, checkpointing — out of
+`neural-child-dashboard.py`, where it sits welded to 1800 lines of layout; that is worth doing
+whatever the UI ends up being, and it is actionable now. #20 rebuilds the UI in Reflex, blocked by
+#19 and by #12 for its checkpoint slice. Neither gates 1.5 — once #10 feeds the CLI real input, a
+run can reach TODDLER with no UI at all — but nothing is watchable while the counters move until
+#20 lands.
 
 ### Stage 2 — Ground
 
